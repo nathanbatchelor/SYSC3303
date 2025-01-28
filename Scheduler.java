@@ -1,3 +1,4 @@
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -7,6 +8,7 @@ public class Scheduler implements Runnable {
     private final Queue<FireEvent> queue = new LinkedList<>();
 
     // Hashmap to store zones?
+    private final HashMap<Integer, Zone> zones = new HashMap<>();
 
     private volatile boolean isFinished = false;
 
@@ -32,6 +34,11 @@ public class Scheduler implements Runnable {
         // Add zone class to create zones from file?
     }
 
+    // Potiential function to get a zone by zone id (if we use a zone class)
+    public synchronized Zone getZone(int zoneId){
+        return zones.get(zoneId);
+    }
+
     // Signal when all fires from input file are finished?
     public synchronized void finish() {
         isFinished = true;
@@ -41,6 +48,8 @@ public class Scheduler implements Runnable {
     public synchronized boolean isFinished() {
         return isFinished;
     }
+
+
     @Override
     public void run() {
 
