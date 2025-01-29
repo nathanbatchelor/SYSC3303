@@ -22,7 +22,7 @@ public class Scheduler implements Runnable {
 
     // get next fire event
     public synchronized FireEvent getNextFireEvent() {
-        // get FireEvents from queue
+        return null;// get FireEvents from queue
     }
 
     // Load zone details from file
