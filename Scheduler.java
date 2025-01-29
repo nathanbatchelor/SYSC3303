@@ -2,13 +2,21 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
+/**
+ * The Scheduler class acts as a central system for handling fire events.
+ * It manages incoming fire events and assigns tasks to drones
+ *
+ * @author Joey Andrwes
+ * @author Grant Phillips
+ */
+
 public class Scheduler implements Runnable {
 
     // Queue to hold FireEvents?
     private final Queue<FireEvent> queue = new LinkedList<>();
 
     // Hashmap to store zones?
-    private final HashMap<Integer, Zone> zones = new HashMap<>();
+    // private final HashMap<Integer, Zone> zones = new HashMap<>();
 
     private volatile boolean isFinished = false;
 
