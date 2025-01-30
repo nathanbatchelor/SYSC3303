@@ -111,11 +111,13 @@ public class Scheduler implements Runnable {
         // get FireEvents from queue
         while (queue.isEmpty() && !isFinished) {
             try {
-                wait();
-                notify();
+                //wait();
+                Thread.sleep(1000);
+                System.out.println("waiting");
             } catch (InterruptedException e) {}
 
         }
+        //notify();
         // return first event. If fire isn't put out, send another drone.
         // Call FIS to see if the fire is out. If so, delete event from queue
         // queue.poll(); returns the first object in the queue, we only want to do this if the fire is extinguished
@@ -149,12 +151,13 @@ public class Scheduler implements Runnable {
         System.out.println("scheduler in run loop");
         while (!isFinished) {
             try {
-                wait();
+                //wait();
+                Thread.sleep(200);
                 if (!queue.isEmpty() && !idleDrones.isEmpty()){
                     droneSendWork();
                 }
-                notify();
-            } catch (InterruptedException e) {
+                //notify();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

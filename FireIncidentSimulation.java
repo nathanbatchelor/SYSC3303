@@ -7,7 +7,7 @@ public class FireIncidentSimulation {
         String fireIncidentFile = "C:\\Users\\Ben\\IdeaProjects\\3303-groupproject\\src\\Sample_event_file.csv";
         String zoneFile = "C:\\Users\\Ben\\IdeaProjects\\3303-groupproject\\src\\sample_zone_file.csv";
 
-        Scheduler scheduler = new Scheduler(zoneFile);
+        Scheduler scheduler = new Scheduler(zoneFile,fireIncidentFile);
         Thread schedulerThread = new Thread(scheduler);
 
         schedulerThread.setName("Scheduler");
