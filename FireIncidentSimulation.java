@@ -7,17 +7,18 @@ public class FireIncidentSimulation {
         String fireIncidentFile = args[0];
         String zoneFile = args[1];
 
-        Scheduler scheduler = new Scheduler();
+        Scheduler scheduler = new Scheduler(zoneFile);
         Thread schedulerThread = new Thread(scheduler);
+
         schedulerThread.setName("Scheduler");
         schedulerThread.start();
 
-        Thread fireIncidentSubsystem = new Thread(new FireIncidentSubsystem(scheduler, file?));
+        Thread fireIncidentSubsystem = new Thread(new FireIncidentSubsystem(scheduler, zoneFile));
         fireIncidentSubsystem.setName("Fire Incident Subsystem");
         fireIncidentSubsystem.start();
 
-        Thread droneSubsystem = new Thread(new DroneSubsystem(scheduler));
-        droneSubsystem.setName("Drone Subsystem");
-        droneSubsystem.start();
+        Thread drone = new Thread(new Drone(scheduler));
+        drone.setName("Drone Subsystem");
+        drone.start();
     }
 }

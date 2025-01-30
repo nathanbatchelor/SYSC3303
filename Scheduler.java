@@ -22,13 +22,16 @@ public class Scheduler implements Runnable {
     // File for zones
     private final String zoneFile;
 
+    private ArrayList<Drone> idleDrones;
+
 
     private volatile boolean isFinished = false;
 
     public Scheduler (String zoneFile) {
        // Future location of drone & FIS objects
         this.zoneFile = zoneFile;
-        readZoneFile();
+        readZoneFile(zoneFile);
+        idleDrones = new ArrayList<Drone>();
     }
 
     // Add fire events to queue
@@ -81,12 +84,17 @@ public class Scheduler implements Runnable {
                 }
 
                 int zoneId = Integer.parseInt(tokens[0].trim());
-                int x1 = Integer.parseInt(tokens[1].trim());
+                /*int x1 = Integer.parseInt(tokens[1].trim());
                 int y1 = Integer.parseInt(tokens[2].trim());
                 int x2 = Integer.parseInt(tokens[3].trim());
                 int y2 = Integer.parseInt(tokens[4].trim());
+                */
+                StringBuilder zoneCoordinates = new StringBuilder();
+                for (int i = 0; i < 5; i++) {
+                    zoneCoordinates.append(tokens[i]);
+                }
 
-                FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, zoneId, x1, y1, x2, y2);
+                FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, zoneCoordinates.toString());
                 zones.put(zoneId, fireIncidentSubsystem);
                 Thread thread = new Thread(fireIncidentSubsystem);
                 thread.setName("Fire Incident Subsystem Zone: " + zoneId);
@@ -112,5 +120,12 @@ public class Scheduler implements Runnable {
                 e.printStackTrace();
             }
         }
+    }
+    public void droneRequestWork(Drone drone){
+        idleDrones.add(drone);
+    }
+    public void droneSendWork(){
+        Drone workingDrone = idleDrones.removeFirst();
+        workingDrone.setJob(queue.poll());
     }
 }
