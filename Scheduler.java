@@ -28,11 +28,41 @@ public class Scheduler implements Runnable {
         loadZoneDetails(zoneFile);
     }
 
+    // Add event file here, pass through to FIS
+    public void readZoneFile(String filename) {
+        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] tokens = line.split(",");
+                if (tokens.length != 5) {
+                    System.out.println("Invalid Line: " + line);
+                    continue;
+                }
+
+                int zoneId = Integer.parseInt(tokens[0].trim());
+                int x1 = Integer.parseInt(tokens[1].trim());
+                int y1 = Integer.parseInt(tokens[2].trim());
+                int x2 = Integer.parseInt(tokens[3].trim());
+                int y2 = Integer.parseInt(tokens[4].trim());
+
+                // put in event file below
+                FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, zoneId, x1, y1, x2, y2);
+                zones.put(zoneId, fireIncidentSubsystem);
+                Thread thread = new Thread(fireIncidentSubsystem);
+                thread.setName("Fire Incident Subsystem Zone: " + zoneId);
+                thread.start();
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + filename);
+        }
+    }
+
     // Add fire events to queue
     // Would FIS call: scheduler.addFireEvent(event);
     public synchronized void addFireEvent(FireEvent event) {
         queue.add(event);
         notifyAll();
+        System.out.println("Scheduler: Added FireEvent → " + event);
     }
 
     /**
@@ -50,6 +80,7 @@ public class Scheduler implements Runnable {
         }
         // return first event. If fire isn't put out, send another drone.
         // Call FIS to see if the fire is out. If so, delete event from queue
+        // queue.poll(); returns the first object in the queue, we only want to do this if the fire is extinguished
         return queue.peek();
     }
 
@@ -58,7 +89,7 @@ public class Scheduler implements Runnable {
     // When count == int severity return true?
     public synchronized void markFireExtinguished(FireEvent event) {
         queue.remove(event);
-        System.out.println("Fire at Zone: " + event.getZoneId() + " Extinguished");
+        System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " Extinguished");
     }
 
     // Signal when all fires from input file are finished?
