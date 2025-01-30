@@ -4,8 +4,8 @@ public class FireIncidentSimulation {
             System.out.println("Usage: java FireIncidentSimulation <FireIncidentFile> <ZoneFile>");
         }
 
-        String fireIncidentFile = args[0];
-        String zoneFile = args[1];
+        String fireIncidentFile = "C:\\Users\\Ben\\IdeaProjects\\3303-groupproject\\src\\Sample_event_file.csv";
+        String zoneFile = "C:\\Users\\Ben\\IdeaProjects\\3303-groupproject\\src\\sample_zone_file.csv";
 
         Scheduler scheduler = new Scheduler(zoneFile);
         Thread schedulerThread = new Thread(scheduler);
@@ -13,9 +13,12 @@ public class FireIncidentSimulation {
         schedulerThread.setName("Scheduler");
         schedulerThread.start();
 
-        Thread fireIncidentSubsystem = new Thread(new FireIncidentSubsystem(scheduler, zoneFile));
+        /*Thread fireIncidentSubsystem = new Thread(new FireIncidentSubsystem(scheduler, zoneFile));
         fireIncidentSubsystem.setName("Fire Incident Subsystem");
-        fireIncidentSubsystem.start();
+        fireIncidentSubsystem.start();*/
+
+
+
 
         Thread drone = new Thread(new Drone(scheduler));
         drone.setName("Drone Subsystem");

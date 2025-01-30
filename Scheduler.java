@@ -76,28 +76,31 @@ public class Scheduler implements Runnable {
     public void readZoneFile(String filename) {
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             String line;
+            line=br.readLine(); // removes header from br before while loop
             while ((line = br.readLine()) != null) {
-                String[] tokens = line.split(",");
+                System.out.println("creating zone");
+
+                /*String[] tokens = line.split(",");
                 if (tokens.length != 5) {
                     System.out.println("Invalid Line: " + line);
                     continue;
                 }
 
                 int zoneId = Integer.parseInt(tokens[0].trim());
-                /*int x1 = Integer.parseInt(tokens[1].trim());
+                int x1 = Integer.parseInt(tokens[1].trim());
                 int y1 = Integer.parseInt(tokens[2].trim());
                 int x2 = Integer.parseInt(tokens[3].trim());
                 int y2 = Integer.parseInt(tokens[4].trim());
-                */
+
                 StringBuilder zoneCoordinates = new StringBuilder();
                 for (int i = 0; i < 5; i++) {
                     zoneCoordinates.append(tokens[i]);
-                }
+                }*/
 
-                FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, zoneCoordinates.toString());
-                zones.put(zoneId, fireIncidentSubsystem);
+                FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, line);
+                //zones.put(zoneId, fireIncidentSubsystem);
                 Thread thread = new Thread(fireIncidentSubsystem);
-                thread.setName("Fire Incident Subsystem Zone: " + zoneId);
+                thread.setName("Fire Incident Subsystem Zone: ");
                 thread.start();
             }
         } catch (IOException e) {

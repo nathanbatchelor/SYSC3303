@@ -28,25 +28,25 @@ public class FireIncidentSubsystem implements Runnable {
     @Override
     public void run() {
         // temp variable used to skip header of csv file
-        int temp = 0;
+        //int temp = 0;
 
         try{
             //read in the input file using BufferReader
-            BufferedReader reader= new BufferedReader(new FileReader(input));
-            String line;
+            //BufferedReader reader= new BufferedReader(new FileReader(input));
+            //String line ;
 
             //while next line of csv is not empty continue parsing
-            while((line = reader.readLine()) != null) {
-                if (temp != 0) {
+            //while((line = reader.readLine()) != null) {
+                //if (temp != 0) {
                     //create fire event data structure and use scheduler addEvent to add the event
-                    FireEvent fireEvent = parseEvent(line);
+                    FireEvent fireEvent = parseEvent(input);
                     System.out.println("FireIncidentSubsystem new Event: " + fireEvent);
                     sch.addFireEvent(fireEvent);
                     Thread.sleep(800);
-                }
-                temp++;
-            }
-        } catch (IOException | InterruptedException e) {
+                //}
+                //temp++;
+            //}
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
