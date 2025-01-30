@@ -31,6 +31,7 @@ public class Drone implements Runnable {
         }
         currentJob = null;
         System.out.println("completed fire event");
+        setAvailable();
     }
 
 }
