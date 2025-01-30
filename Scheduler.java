@@ -37,28 +37,57 @@ public class Scheduler implements Runnable {
     public void readZoneFile(String zoneFile) {
         try (BufferedReader br = new BufferedReader(new FileReader(zoneFile))) {
             String line;
+            boolean isFirstLine = true;
             while ((line = br.readLine()) != null) {
+                // Skip header row
+                if (isFirstLine) {
+                    isFirstLine = false;
+                    continue;
+                }
                 String[] tokens = line.split(",");
-                if (tokens.length != 5) {
+                if (tokens.length != 3) {  // Adjusted for new format (ID, Start, End)
                     System.out.println("Invalid Line: " + line);
                     continue;
                 }
+                try {
+                    int zoneId = Integer.parseInt(tokens[0].trim());
+                    int[] startCoords = parseCoordinates(tokens[1].trim());
+                    int[] endCoords = parseCoordinates(tokens[2].trim());
 
-                int zoneId = Integer.parseInt(tokens[0].trim());
-                int x1 = Integer.parseInt(tokens[1].trim());
-                int y1 = Integer.parseInt(tokens[2].trim());
-                int x2 = Integer.parseInt(tokens[3].trim());
-                int y2 = Integer.parseInt(tokens[4].trim());
+                    if (startCoords == null || endCoords == null) {
+                        System.out.println("Invalid Coordinates: " + line);
+                        continue;
+                    }
 
-                // put in event file below
-                FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, eventFile, zoneId, x1, y1, x2, y2);
-                zones.put(zoneId, fireIncidentSubsystem);
-                Thread thread = new Thread(fireIncidentSubsystem);
-                thread.setName("Fire Incident Subsystem Zone: " + zoneId);
-                thread.start();
+                    int x1 = startCoords[0], y1 = startCoords[1];
+                    int x2 = endCoords[0], y2 = endCoords[1];
+
+                    // Put in event file below
+                    FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, eventFile, zoneId, x1, y1, x2, y2);
+                    zones.put(zoneId, fireIncidentSubsystem);
+                    Thread thread = new Thread(fireIncidentSubsystem);
+                    thread.setName("Fire Incident Subsystem Zone: " + zoneId);
+                    thread.start();
+                } catch (NumberFormatException e) {
+                    System.out.println("Error parsing numbers in line: " + line);
+                }
             }
         } catch (IOException e) {
-            System.out.println("Error reading file: " + filename);
+            System.out.println("Error reading file: " + zoneFile);
+        }
+    }
+
+    private int[] parseCoordinates(String coordinate) {
+        coordinate = coordinate.replaceAll("[()]", ""); // Remove parentheses
+        String[] parts = coordinate.split(";");
+        if (parts.length != 2) return null;  // Invalid format
+
+        try {
+            int x = Integer.parseInt(parts[0].trim());
+            int y = Integer.parseInt(parts[1].trim());
+            return new int[]{x, y};
+        } catch (NumberFormatException e) {
+            return null;  // Parsing failed
         }
     }
 
@@ -102,7 +131,6 @@ public class Scheduler implements Runnable {
         isFinished = true;
         notifyAll();
     }
-
 
 
     // Called when thread is finished running
