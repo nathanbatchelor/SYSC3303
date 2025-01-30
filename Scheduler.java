@@ -21,19 +21,21 @@ public class Scheduler implements Runnable {
     private final Map<Integer, FireIncidentSubsystem> zones = new HashMap<>();
     // File for zones
     private final String zoneFile;
-
+    // File for Events - To be passed to FIS
+    private final String eventFile;
 
     private volatile boolean isFinished = false;
 
-    public Scheduler (String zoneFile) {
+    public Scheduler (String zoneFile, String eventFile) {
        // Future location of drone & FIS objects
         this.zoneFile = zoneFile;
+        this.eventFile = eventFile;
         readZoneFile();
     }
 
     // Add event file here, pass through to FIS
-    public void readZoneFile(String filename) {
-        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+    public void readZoneFile(String zoneFile) {
+        try (BufferedReader br = new BufferedReader(new FileReader(zoneFile))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] tokens = line.split(",");
@@ -49,7 +51,7 @@ public class Scheduler implements Runnable {
                 int y2 = Integer.parseInt(tokens[4].trim());
 
                 // put in event file below
-                FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, zoneId, x1, y1, x2, y2);
+                FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, eventFile, zoneId, x1, y1, x2, y2);
                 zones.put(zoneId, fireIncidentSubsystem);
                 Thread thread = new Thread(fireIncidentSubsystem);
                 thread.setName("Fire Incident Subsystem Zone: " + zoneId);
