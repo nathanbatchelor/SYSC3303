@@ -9,6 +9,7 @@ public class Drone implements Runnable {
     }
     @Override
     public void run() {
+        setAvailable();
         while (true) {
             try {
                 wait();
@@ -23,6 +24,13 @@ public class Drone implements Runnable {
     public void setJob(FireEvent fireEvent){
         currentJob = fireEvent;
         System.out.println(fireEvent);
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        currentJob = null;
+        System.out.println("completed fire event");
     }
 
 }
