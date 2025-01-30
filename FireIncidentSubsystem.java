@@ -1,4 +1,6 @@
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 /**
  * The FireIncidentSubsystem class will help read input file, create FireEvent and parse information from the file line by line and add teh FireEvent to the
@@ -8,62 +10,70 @@ import java.io.*;
  * @author Jasjot
  *
  * @version 1.0 (Iteration 1), 29th January 2025
- *
  */
-
 public class FireIncidentSubsystem implements Runnable {
+    private final Scheduler scheduler;
+    private final String eventFile;
+    private final int zoneId;
+    private final int x1, y1, x2, y2;
 
-    private final Scheduler sch;
-    private final String input;
-
-    public FireIncidentSubsystem(Scheduler sch, String input) {
-        this.sch = sch;
-        this.input = input;
+    public FireIncidentSubsystem(Scheduler scheduler, String eventFile, int zoneId, int x1, int y1, int x2, int y2) {
+        this.scheduler = scheduler;
+        this.eventFile = eventFile;
+        this.zoneId = zoneId;
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
     }
 
-    /**
-     * This method reads the input file and adds the event to the scheduler.
-     *
-     */
     @Override
     public void run() {
-        // temp variable used to skip header of csv file
-        //int temp = 0;
+        System.out.println(Thread.currentThread().getName() + " running for Zone " + zoneId);
 
-        try{
-            //read in the input file using BufferReader
-            //BufferedReader reader= new BufferedReader(new FileReader(input));
-            //String line ;
+        try (BufferedReader reader = new BufferedReader(new FileReader(eventFile))) {
+            String line;
+            boolean skipHeader = true;
 
-            //while next line of csv is not empty continue parsing
-            //while((line = reader.readLine()) != null) {
-                //if (temp != 0) {
-                    //create fire event data structure and use scheduler addEvent to add the event
-                    FireEvent fireEvent = parseEvent(input);
-                    System.out.println("FireIncidentSubsystem new Event: " + fireEvent);
-                    sch.addFireEvent(fireEvent);
+            while ((line = reader.readLine()) != null) {
+                if (skipHeader) {
+                    skipHeader = false;
+                    continue; // Skip CSV header
+                }
+
+                FireEvent fireEvent = parseEvent(line);
+
+                // Only process events for this zone
+                if (fireEvent.getZoneId() == zoneId) {
+                    System.out.println("FireIncidentSubsystem-Zone " + zoneId + " → New Fire Event: " + fireEvent);
+                    scheduler.addFireEvent(fireEvent);
                     Thread.sleep(800);
-                //}
-                //temp++;
-            //}
-        } catch (Exception e) {
+                }
+            }
+        } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     /**
-     *
-     * @param line of the csv file being parsed
-     * @return a new FireEvent data structure
+     * Parses a single line from `Sample_event_file.csv` and creates a FireEvent.
      */
     private FireEvent parseEvent(String line) {
-        //split line of csv file and create attributes of FireEvent data structure
         String[] slices = line.split(",");
         String time = slices[0];
-        int zoneId = Integer.parseInt(slices[1]);
+        int eventZoneId = Integer.parseInt(slices[1]);
         String eventType = slices[2];
         String severity = slices[3];
-        return new FireEvent(time, zoneId, eventType, severity);
+
+        return new FireEvent(time, eventZoneId, eventType, severity);
+    }
+
+    public String getZoneCoordinates() {
+        return "(" + x1 + "," + y1 + ") to (" + x2 + "," + y2 + ")";
+    }
+
+    @Override
+    public String toString() {
+        return "FireIncidentSubsystem-Zone " + zoneId + " [" + getZoneCoordinates() + "]";
     }
 }

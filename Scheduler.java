@@ -21,17 +21,77 @@ public class Scheduler implements Runnable {
     private final Map<Integer, FireIncidentSubsystem> zones = new HashMap<>();
     // File for zones
     private final String zoneFile;
-
-    private ArrayList<Drone> idleDrones;
-
+    // File for Events - To be passed to FIS
+    private final String eventFile;
 
     private volatile boolean isFinished = false;
 
-    public Scheduler (String zoneFile) {
-       // Future location of drone & FIS objects
+    ArrayList<Drone> idleDrones;
+
+    public Scheduler (String zoneFile, String eventFile) {
+        // Future location of drone & FIS objects
         this.zoneFile = zoneFile;
-        readZoneFile(zoneFile);
+        this.eventFile = eventFile;
+        readZoneFile();
         idleDrones = new ArrayList<Drone>();
+    }
+
+    // Add event file here, pass through to FIS
+    public void readZoneFile() {
+        try (BufferedReader br = new BufferedReader(new FileReader(zoneFile))) {
+            String line;
+            boolean isFirstLine = true;
+            while ((line = br.readLine()) != null) {
+                // Skip header row
+                if (isFirstLine) {
+                    isFirstLine = false;
+                    continue;
+                }
+                String[] tokens = line.split(",");
+                if (tokens.length != 3) {  // Adjusted for new format (ID, Start, End)
+                    System.out.println("Invalid Line: " + line);
+                    continue;
+                }
+                try {
+                    int zoneId = Integer.parseInt(tokens[0].trim());
+                    int[] startCoords = parseCoordinates(tokens[1].trim());
+                    int[] endCoords = parseCoordinates(tokens[2].trim());
+
+                    if (startCoords == null || endCoords == null) {
+                        System.out.println("Invalid Coordinates: " + line);
+                        continue;
+                    }
+
+                    int x1 = startCoords[0], y1 = startCoords[1];
+                    int x2 = endCoords[0], y2 = endCoords[1];
+
+                    // Put in event file below
+                    FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, eventFile, zoneId, x1, y1, x2, y2);
+                    zones.put(zoneId, fireIncidentSubsystem);
+                    Thread thread = new Thread(fireIncidentSubsystem);
+                    thread.setName("Fire Incident Subsystem Zone: " + zoneId);
+                    thread.start();
+                } catch (NumberFormatException e) {
+                    System.out.println("Error parsing numbers in line: " + line);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + zoneFile);
+        }
+    }
+
+    private int[] parseCoordinates(String coordinate) {
+        coordinate = coordinate.replaceAll("[()]", ""); // Remove parentheses
+        String[] parts = coordinate.split(";");
+        if (parts.length != 2) return null;  // Invalid format
+
+        try {
+            int x = Integer.parseInt(parts[0].trim());
+            int y = Integer.parseInt(parts[1].trim());
+            return new int[]{x, y};
+        } catch (NumberFormatException e) {
+            return null;  // Parsing failed
+        }
     }
 
     // Add fire events to queue
@@ -39,6 +99,7 @@ public class Scheduler implements Runnable {
     public synchronized void addFireEvent(FireEvent event) {
         queue.add(event);
         notifyAll();
+        System.out.println("Scheduler: Added FireEvent → " + event);
     }
 
     /**
@@ -51,11 +112,14 @@ public class Scheduler implements Runnable {
         while (queue.isEmpty() && !isFinished) {
             try {
                 wait();
+                notify();
             } catch (InterruptedException e) {}
 
         }
         // return first event. If fire isn't put out, send another drone.
         // Call FIS to see if the fire is out. If so, delete event from queue
+        // queue.poll(); returns the first object in the queue, we only want to do this if the fire is extinguished
+
         return queue.peek();
     }
 
@@ -64,7 +128,7 @@ public class Scheduler implements Runnable {
     // When count == int severity return true?
     public synchronized void markFireExtinguished(FireEvent event) {
         queue.remove(event);
-        System.out.println("Fire at Zone: " + event.getZoneId() + " Extinguished");
+        System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " Extinguished");
     }
 
     // Signal when all fires from input file are finished?
@@ -73,40 +137,6 @@ public class Scheduler implements Runnable {
         notifyAll();
     }
 
-    public void readZoneFile(String filename) {
-        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
-            String line;
-            line=br.readLine(); // removes header from br before while loop
-            while ((line = br.readLine()) != null) {
-                System.out.println("creating zone");
-
-                /*String[] tokens = line.split(",");
-                if (tokens.length != 5) {
-                    System.out.println("Invalid Line: " + line);
-                    continue;
-                }
-
-                int zoneId = Integer.parseInt(tokens[0].trim());
-                int x1 = Integer.parseInt(tokens[1].trim());
-                int y1 = Integer.parseInt(tokens[2].trim());
-                int x2 = Integer.parseInt(tokens[3].trim());
-                int y2 = Integer.parseInt(tokens[4].trim());
-
-                StringBuilder zoneCoordinates = new StringBuilder();
-                for (int i = 0; i < 5; i++) {
-                    zoneCoordinates.append(tokens[i]);
-                }*/
-
-                FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, line);
-                //zones.put(zoneId, fireIncidentSubsystem);
-                Thread thread = new Thread(fireIncidentSubsystem);
-                thread.setName("Fire Incident Subsystem Zone: ");
-                thread.start();
-            }
-        } catch (IOException e) {
-            System.out.println("Error reading file: " + filename);
-        }
-    }
 
     // Called when thread is finished running
     public synchronized boolean isFinished() {
@@ -116,9 +146,14 @@ public class Scheduler implements Runnable {
     // Not utilised in iteration #1
     @Override
     public void run() {
+        System.out.println("scheduler in run loop");
         while (!isFinished) {
             try {
                 wait();
+                if (!queue.isEmpty() && !idleDrones.isEmpty()){
+                    droneSendWork();
+                }
+                notify();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -127,6 +162,7 @@ public class Scheduler implements Runnable {
     public void droneRequestWork(Drone drone, float liters){
         idleDrones.add(drone);
         System.out.println("drone" + idleDrones.size() + " has " + liters + " litres remaining");
+
     }
     public void droneSendWork(){
         Drone workingDrone = idleDrones.removeFirst();
