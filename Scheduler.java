@@ -124,8 +124,9 @@ public class Scheduler implements Runnable {
             }
         }
     }
-    public void droneRequestWork(Drone drone){
+    public void droneRequestWork(Drone drone, float liters){
         idleDrones.add(drone);
+        System.out.println("drone" + idleDrones.size() + " has " + liters + " litres remaining");
     }
     public void droneSendWork(){
         Drone workingDrone = idleDrones.removeFirst();
