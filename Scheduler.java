@@ -101,32 +101,7 @@ public class Scheduler implements Runnable {
         notifyAll();
     }
 
-    public void readZoneFile(String filename) {
-        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] tokens = line.split(",");
-                if (tokens.length != 5) {
-                    System.out.println("Invalid Line: " + line);
-                    continue;
-                }
 
-                int zoneId = Integer.parseInt(tokens[0].trim());
-                int x1 = Integer.parseInt(tokens[1].trim());
-                int y1 = Integer.parseInt(tokens[2].trim());
-                int x2 = Integer.parseInt(tokens[3].trim());
-                int y2 = Integer.parseInt(tokens[4].trim());
-
-                FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, zoneId, x1, y1, x2, y2);
-                zones.put(zoneId, fireIncidentSubsystem);
-                Thread thread = new Thread(fireIncidentSubsystem);
-                thread.setName("Fire Incident Subsystem Zone: " + zoneId);
-                thread.start();
-            }
-        } catch (IOException e) {
-            System.out.println("Error reading file: " + filename);
-        }
-    }
 
     // Called when thread is finished running
     public synchronized boolean isFinished() {
