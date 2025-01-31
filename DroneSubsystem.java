@@ -44,6 +44,10 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " reached cruising altitude.");
     }
 
+    /**
+     * Simulates the drone's landing at the base station.
+     * The process takes 10 seconds.
+     */
     private void descend() {
         System.out.println(Thread.currentThread().getName() + " descend to 20m altitude...");
         sleep(10000);
