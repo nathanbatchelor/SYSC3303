@@ -23,6 +23,13 @@ public class Scheduler implements Runnable {
     private volatile boolean isFinished = false;
     private volatile boolean isLoaded = false;
 
+    /**
+     * Constructs a Scheduler object with specified zone and event files
+     *
+     *
+     * @param zoneFile The file containing zone information
+     * @param eventFile The file containing fire event information
+     */
     public Scheduler (String zoneFile, String eventFile) {
         this.zoneFile = zoneFile;
         this.eventFile = eventFile;
@@ -30,6 +37,10 @@ public class Scheduler implements Runnable {
     }
 
 
+    /**
+     * Reads the zone files to initialize FireIncidentResponse for each zone
+     * It also starts the respective threads for handling fire events
+     */
     public void readZoneFile() {
         try {
             File file = new File(this.zoneFile);
@@ -89,6 +100,9 @@ public class Scheduler implements Runnable {
         }
     }
 
+    /**
+     * Signals that all events have been loaded and starts Drone Subsystem
+     */
     public synchronized void setEventsLoaded() {
         this.isLoaded = true;
         notifyAll();
@@ -99,6 +113,12 @@ public class Scheduler implements Runnable {
         droneSubsystem.start();
     }
 
+    /**
+     * Parses a string of coordinates from the Zone file into an integer array
+     *
+     * @param coordinate The coordinate string in format (x;y)
+     * @return An array containing the x and y values
+     */
     private int[] parseCoordinates(String coordinate) {
         coordinate = coordinate.replaceAll("[()]", ""); // Remove parentheses
         String[] parts = coordinate.split(";");
@@ -113,8 +133,11 @@ public class Scheduler implements Runnable {
         }
     }
 
-    // Add fire events to queue
-    // Would FIS call: scheduler.addFireEvent(event);
+
+    /**
+     * Adds a FireEvent to the queue and notfies
+     * @param event
+     */
     public synchronized void addFireEvent(FireEvent event) {
         queue.add(event);
         notifyAll();
@@ -122,12 +145,12 @@ public class Scheduler implements Runnable {
     }
 
     /**
+     * Returns the next FireEvent in the
      *
      * @return The first FireEvent in the queue
      */
     // Would DS call: scheduler.getNextFireEvent();
     public synchronized FireEvent getNextFireEvent() {
-        // get FireEvents from queue
         System.out.println("Queue has: " + queue);
         if(queue.isEmpty() && isLoaded) {
             System.out.println("No more events. Marking scheduler as finished");
@@ -139,21 +162,16 @@ public class Scheduler implements Runnable {
             try {
                 System.out.println("System is waiting for fire events to be added");
                 wait();
-
-                // Getting stuck here after execution
             } catch (InterruptedException e) {}
-
         }
-
-        // return first event. If fire isn't put out, send another drone.
-        // Call FIS to see if the fire is out. If so, delete event from queue
-        // queue.poll(); returns the first object in the queue, we only want to do this if the fire is extinguished
         return queue.peek();
     }
 
-    // The FIS could call this when fire is extinguished?
-    // FIS has a count, counts number of litres dropped by drone?
-    // When count == int severity return true?
+    /**
+     *
+     *
+     * @param event
+     */
     public synchronized void markFireExtinguished(FireEvent event) {
         queue.remove(event);
         System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " Extinguished");
