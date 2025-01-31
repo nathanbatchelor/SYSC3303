@@ -5,8 +5,8 @@ import java.io.IOException;
 /**
  * The FireIncidentSubsystem class is responsible for reading an input file, creating FireEvent instances,
  * parsing information from the file line by line, and adding FireEvent objects to the scheduler queue.
- * <p>
- * This class implements {@link Runnable}, allowing it to be executed within a thread, and processes events
+ *
+ * This class implements Runnable, allowing it to be executed within a thread, and processes events
  * specific to a given zone.
  *
  * @author Anique
@@ -23,7 +23,7 @@ public class FireIncidentSubsystem implements Runnable {
     /**
      * Constructs a FireIncidentSubsystem to process fire events for a specific zone.
      *
-     * @param scheduler The {@link Scheduler} instance used to handle scheduling fire events.
+     * @param scheduler The Scheduler instance used to handle scheduling fire events.
      * @param eventFile The path to the file containing fire events data.
      * @param zoneId    The ID of the zone for which this subsystem is responsible.
      * @param x1        The x-coordinate of the top-left corner of the zone.
@@ -74,10 +74,10 @@ public class FireIncidentSubsystem implements Runnable {
     }
 
     /**
-     * Parses a single line from the fire events file and creates a {@link FireEvent} object.
+     * Parses a single line from the fire events file and creates a FireEvent object.
      *
      * @param line A line from the fire events file representing an event.
-     * @return A {@link FireEvent} instance created from the parsed data.
+     * @return A FireEvent instance created from the parsed data.
      */
     private FireEvent parseEvent(String line) {
         String[] slices = line.split(",");

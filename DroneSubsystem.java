@@ -1,5 +1,5 @@
 /**
- * The {@code DroneSubsystem} class implements a subsystem that simulates a firefighting drone responding to fire events.
+ * The DroneSubsystem class implements a subsystem that simulates a firefighting drone responding to fire events.
  * It calculates water needed, performs operations like takeoff, travel, extinguish fire, and returns to base.
  */
 public class DroneSubsystem implements Runnable {
