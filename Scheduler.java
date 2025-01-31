@@ -1,4 +1,6 @@
+import javax.sound.midi.SysexMessage;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
@@ -27,50 +29,66 @@ public class Scheduler implements Runnable {
     private volatile boolean isFinished = false;
 
     public Scheduler (String zoneFile, String eventFile) {
-       // Future location of drone & FIS objects
+        // Future location of drone & FIS objects
         this.zoneFile = zoneFile;
         this.eventFile = eventFile;
-        readZoneFile(zoneFile);
+        readZoneFile();
     }
 
     // Add event file here, pass through to FIS
-    public void readZoneFile(String zoneFile) {
-        try (BufferedReader br = new BufferedReader(new FileReader(zoneFile))) {
-            String line;
-            boolean isFirstLine = true;
-            while ((line = br.readLine()) != null) {
-                // Skip header row
-                if (isFirstLine) {
-                    isFirstLine = false;
-                    continue;
-                }
-                String[] tokens = line.split(",");
-                if (tokens.length != 3) {  // Adjusted for new format (ID, Start, End)
-                    System.out.println("Invalid Line: " + line);
-                    continue;
-                }
-                try {
-                    int zoneId = Integer.parseInt(tokens[0].trim());
-                    int[] startCoords = parseCoordinates(tokens[1].trim());
-                    int[] endCoords = parseCoordinates(tokens[2].trim());
+    public void readZoneFile() {
+        try {
+            File file = new File(this.zoneFile);
+            System.out.println("Checking path: " + file.getAbsolutePath());
+            if (!file.exists()) {
+                System.out.println("Zone file does not exist");
+                return;
+            }
 
-                    if (startCoords == null || endCoords == null) {
-                        System.out.println("Invalid Coordinates: " + line);
+            System.out.println("Attempting to read file: " + zoneFile);
+
+            try (BufferedReader br = new BufferedReader(new FileReader(zoneFile))) {
+                String line;
+                boolean isFirstLine = true;
+                while ((line = br.readLine()) != null) {
+                    // Skip header row
+                    if (isFirstLine) {
+                        isFirstLine = false;
+                        continue;
+                    }
+                    // Debugging: Log the line being read
+                    System.out.println("Reading line: " + line);
+
+                    String[] tokens = line.split(",");
+                    if (tokens.length != 3) {  // Adjusted for new format (ID, Start, End)
+                        System.out.println("Invalid Line: " + line);
                         continue;
                     }
 
-                    int x1 = startCoords[0], y1 = startCoords[1];
-                    int x2 = endCoords[0], y2 = endCoords[1];
+                    try {
+                        int zoneId = Integer.parseInt(tokens[0].trim());
+                        int[] startCoords = parseCoordinates(tokens[1].trim());
+                        int[] endCoords = parseCoordinates(tokens[2].trim());
 
-                    // Put in event file below
-                    FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, eventFile, zoneId, x1, y1, x2, y2);
-                    zones.put(zoneId, fireIncidentSubsystem);
-                    Thread thread = new Thread(fireIncidentSubsystem);
-                    thread.setName("Fire Incident Subsystem Zone: " + zoneId);
-                    thread.start();
-                } catch (NumberFormatException e) {
-                    System.out.println("Error parsing numbers in line: " + line);
+                        if (startCoords == null || endCoords == null) {
+                            System.out.println("Invalid Coordinates: " + line);
+                            continue;
+                        }
+
+                        int x1 = startCoords[0], y1 = startCoords[1];
+                        int x2 = endCoords[0], y2 = endCoords[1];
+
+                        // Create and start FireIncidentSubsystem
+                        FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, eventFile, zoneId, x1, y1, x2, y2);
+                        zones.put(zoneId, fireIncidentSubsystem);
+                        Thread thread = new Thread(fireIncidentSubsystem);
+                        thread.setName("Fire Incident Subsystem Zone: " + zoneId);
+                        thread.start();
+                    } catch (NumberFormatException e) {
+                        System.out.println("Error parsing numbers in line: " + line);
+                    }
                 }
+
             }
         } catch (IOException e) {
             System.out.println("Error reading file: " + zoneFile);
@@ -106,6 +124,7 @@ public class Scheduler implements Runnable {
     // Would DS call: scheduler.getNextFireEvent();
     public synchronized FireEvent getNextFireEvent() {
         // get FireEvents from queue
+        System.out.println("Queue has: " + queue);
         while (queue.isEmpty() && !isFinished) {
             try {
                 wait();
@@ -126,6 +145,10 @@ public class Scheduler implements Runnable {
         System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " Extinguished");
     }
 
+    public synchronized void editFireEvent(FireEvent event, int litres) {
+        event.removeLitres(litres);
+    }
+
     // Signal when all fires from input file are finished?
     public synchronized void finish() {
         isFinished = true;
@@ -142,6 +165,7 @@ public class Scheduler implements Runnable {
     @Override
     public synchronized void run() {
         while (!isFinished) {
+            System.out.println("Inside scheduler Run");
             try {
                 wait();
             } catch (InterruptedException e) {

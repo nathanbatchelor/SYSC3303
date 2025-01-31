@@ -3,6 +3,8 @@ public class FireEvent {
     private final int zoneId;
     private final String eventType;
     private final String severity;
+
+    private int litresNeeded;
     private final FireIncidentSubsystem fireIncidentSubsystem;
 
     public FireEvent(String time, int zoneId, String eventType, String severity, FireIncidentSubsystem fireIncidentSubsystem) {
@@ -30,6 +32,20 @@ public class FireEvent {
     }
 
     public String getZoneDetails() {return fireIncidentSubsystem.getZoneCoordinates();}
+
+    public int setLitres(int litres) {
+        litresNeeded = litres;
+        return litresNeeded;
+    }
+
+    public int removeLitres(int lires){
+        this.litresNeeded -=  lires;
+        return litresNeeded;
+    }
+
+    public int getLitres() {
+        return litresNeeded;
+    }
 
     @Override
     public String toString() {

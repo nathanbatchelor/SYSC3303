@@ -50,7 +50,7 @@ public class FireIncidentSubsystem implements Runnable {
                     Thread.sleep(800);
                 }
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
