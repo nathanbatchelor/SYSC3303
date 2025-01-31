@@ -30,7 +30,7 @@ public class Scheduler implements Runnable {
        // Future location of drone & FIS objects
         this.zoneFile = zoneFile;
         this.eventFile = eventFile;
-        readZoneFile();
+        readZoneFile(zoneFile);
     }
 
     // Add event file here, pass through to FIS
@@ -140,7 +140,7 @@ public class Scheduler implements Runnable {
 
     // Not utilised in iteration #1
     @Override
-    public void run() {
+    public synchronized void run() {
         while (!isFinished) {
             try {
                 wait();

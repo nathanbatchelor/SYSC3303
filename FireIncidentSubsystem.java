@@ -28,7 +28,7 @@ public class FireIncidentSubsystem implements Runnable {
     }
 
     @Override
-    public void run() {
+    public synchronized void run() {
         System.out.println(Thread.currentThread().getName() + " running for Zone " + zoneId);
 
         try (BufferedReader reader = new BufferedReader(new FileReader(eventFile))) {

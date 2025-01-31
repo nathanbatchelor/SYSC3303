@@ -3,12 +3,14 @@ public class FireEvent {
     private final int zoneId;
     private final String eventType;
     private final String severity;
+    private final FireIncidentSubsystem fireIncidentSubsystem;
 
-    public FireEvent(String time, int zoneId, String eventType, String severity) {
+    public FireEvent(String time, int zoneId, String eventType, String severity, FireIncidentSubsystem fireIncidentSubsystem) {
         this.time = time;
         this.zoneId = zoneId;
         this.eventType = eventType;
         this.severity = severity;
+        this.fireIncidentSubsystem = fireIncidentSubsystem;
     }
 
     public String getTime() {
@@ -26,6 +28,8 @@ public class FireEvent {
     public String getSeverity() {
         return severity;
     }
+
+    public String getZoneDetails() {return fireIncidentSubsystem.getZoneCoordinates();}
 
     @Override
     public String toString() {
