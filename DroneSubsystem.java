@@ -11,9 +11,9 @@ public class DroneSubsystem implements Runnable {
     private double travelTimeToFire = 0;
 
     /**
-     * Constructs a {@code DroneSubsystem} object with the specified scheduler.
+     * Constructs a DroneSubsystem object with the specified scheduler.
      *
-     * @param scheduler the {@code Scheduler} object responsible for handling fire events.
+     * @param scheduler the Scheduler object responsible for handling fire events.
      */
     public DroneSubsystem(Scheduler scheduler) {
         this.scheduler = scheduler;
@@ -44,10 +44,16 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " reached cruising altitude.");
     }
 
+    private void descend() {
+        System.out.println(Thread.currentThread().getName() + " descend to 20m altitude...");
+        sleep(10000);
+        System.out.println(Thread.currentThread().getName() + " reached ground station.");
+    }
+
     /**
      * Simulates the drone traveling to the center of the fire zone.
      *
-     * @param event the {@code FireEvent} object containing details about the fire zone.
+     * @param event the FireEvent object containing details about the fire zone.
      */
     private void travelToZoneCenter(FireEvent event) {
         String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
@@ -93,10 +99,7 @@ public class DroneSubsystem implements Runnable {
     private void returnToBase() {
         System.out.println(Thread.currentThread().getName() + " returning to base...");
         sleep((long) (travelTimeToFire * 1000));  // Use stored travel time
-
-        System.out.println(Thread.currentThread().getName() + " descending to ground...");
-        sleep(10000);
-        System.out.println(Thread.currentThread().getName() + " landed safely.");
+        descend();
     }
 
     /**

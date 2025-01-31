@@ -3,7 +3,6 @@ public class FireIncidentSimulation {
         if (args.length != 2) {
             System.out.println("Usage: java FireIncidentSimulation <FireIncidentFile> <ZoneFile>");
         }
-
         String fireIncidentFile = "Sample_event_file.csv";
         String zoneFile = "sample_zone_file.csv";
 
@@ -11,6 +10,5 @@ public class FireIncidentSimulation {
         Thread schedulerThread = new Thread(scheduler);
         schedulerThread.setName("Scheduler");
         schedulerThread.start();
-
     }
 }

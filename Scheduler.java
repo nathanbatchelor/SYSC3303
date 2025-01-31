@@ -12,7 +12,7 @@ import java.util.Queue;
  * It manages incoming fire events and assigns tasks to drones.
  * This class handles zones, fire events, and communication with subsystems
  * for fire incident management.
- * <p>
+ *
  * Implements the Runnable interface to allow it to execute in a separate thread.
  *
  * @author Joey Andrwes

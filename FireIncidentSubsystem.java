@@ -59,7 +59,6 @@ public class FireIncidentSubsystem implements Runnable {
                     skipHeader = false;
                     continue; // Skip CSV header
                 }
-
                 FireEvent fireEvent = parseEvent(line);
                 // Only process events for this zone
                 if (fireEvent.getZoneId() == zoneId) {
