@@ -2,18 +2,23 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
 
 /**
- * The Scheduler class acts as a central system for handling fire events.
- * It manages incoming fire events and assigns tasks to drones
+ * The Scheduler class acts as a centralized system for handling fire events.
+ * It manages incoming fire events and assigns tasks to drones.
+ * This class handles zones, fire events, and communication with subsystems
+ * for fire incident management.
+ * <p>
+ * Implements the Runnable interface to allow it to execute in a separate thread.
  *
  * @author Joey Andrwes
  * @author Grant Phillips
- *
  * @version 1.0
  */
-
 public class Scheduler implements Runnable {
 
     private final Queue<FireEvent> queue = new LinkedList<>();
@@ -24,22 +29,20 @@ public class Scheduler implements Runnable {
     private volatile boolean isLoaded = false;
 
     /**
-     * Constructs a Scheduler object with specified zone and event files
+     * Constructs a Scheduler object with specified zone and event files.
      *
-     *
-     * @param zoneFile The file containing zone information
-     * @param eventFile The file containing fire event information
+     * @param zoneFile  The file containing zone information.
+     * @param eventFile The file containing fire event information.
      */
-    public Scheduler (String zoneFile, String eventFile) {
+    public Scheduler(String zoneFile, String eventFile) {
         this.zoneFile = zoneFile;
         this.eventFile = eventFile;
         readZoneFile();
     }
 
-
     /**
-     * Reads the zone files to initialize FireIncidentResponse for each zone
-     * It also starts the respective threads for handling fire events
+     * Reads the zone file to initialize FireIncidentSubsystems for each zone.
+     * Starts a thread for each zone to handle fire events within it.
      */
     public void readZoneFile() {
         try {
@@ -56,16 +59,14 @@ public class Scheduler implements Runnable {
                 String line;
                 boolean isFirstLine = true;
                 while ((line = br.readLine()) != null) {
-                    // Skip header row
                     if (isFirstLine) {
                         isFirstLine = false;
-                        continue;
+                        continue; // Skip header row
                     }
-                    // Debugging: Log the line being read
                     System.out.println("Reading line: " + line);
 
                     String[] tokens = line.split(",");
-                    if (tokens.length != 3) {  // Adjusted for new format (ID, Start, End)
+                    if (tokens.length != 3) {
                         System.out.println("Invalid Line: " + line);
                         continue;
                     }
@@ -83,7 +84,6 @@ public class Scheduler implements Runnable {
                         int x1 = startCoords[0], y1 = startCoords[1];
                         int x2 = endCoords[0], y2 = endCoords[1];
 
-                        // Create and start FireIncidentSubsystem
                         FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(this, eventFile, zoneId, x1, y1, x2, y2);
                         zones.put(zoneId, fireIncidentSubsystem);
                         Thread thread = new Thread(fireIncidentSubsystem);
@@ -93,7 +93,6 @@ public class Scheduler implements Runnable {
                         System.out.println("Error parsing numbers in line: " + line);
                     }
                 }
-
             }
         } catch (IOException e) {
             System.out.println("Error reading file: " + zoneFile);
@@ -101,7 +100,8 @@ public class Scheduler implements Runnable {
     }
 
     /**
-     * Signals that all events have been loaded and starts Drone Subsystem
+     * Signals that all events have been loaded and initializes the DroneSubsystem.
+     * Starts the DroneSubsystem in a new thread.
      */
     public synchronized void setEventsLoaded() {
         this.isLoaded = true;
@@ -114,29 +114,30 @@ public class Scheduler implements Runnable {
     }
 
     /**
-     * Parses a string of coordinates from the Zone file into an integer array
+     * Parses a string of coordinates from the zone file into an integer array.
      *
-     * @param coordinate The coordinate string in format (x;y)
-     * @return An array containing the x and y values
+     * @param coordinate The coordinate string in format (x;y).
+     * @return An integer array containing the x and y values.
+     * Returns null if the format is invalid or parsing fails.
      */
     private int[] parseCoordinates(String coordinate) {
         coordinate = coordinate.replaceAll("[()]", ""); // Remove parentheses
         String[] parts = coordinate.split(";");
-        if (parts.length != 2) return null;  // Invalid format
+        if (parts.length != 2) return null;
 
         try {
             int x = Integer.parseInt(parts[0].trim());
             int y = Integer.parseInt(parts[1].trim());
             return new int[]{x, y};
         } catch (NumberFormatException e) {
-            return null;  // Parsing failed
+            return null;
         }
     }
 
-
     /**
-     * Adds a FireEvent to the queue and notfies
-     * @param event
+     * Adds a FireEvent to the queue and notifies waiting threads.
+     *
+     * @param event The FireEvent to add to the queue.
      */
     public synchronized void addFireEvent(FireEvent event) {
         queue.add(event);
@@ -145,14 +146,14 @@ public class Scheduler implements Runnable {
     }
 
     /**
-     * Returns the next FireEvent in the
+     * Retrieves the next FireEvent from the queue and returns it.
+     * If the queue is empty, waits until a FireEvent is added or signals the system is finished.
      *
-     * @return The first FireEvent in the queue
+     * @return The next FireEvent in the queue, or null if processing is complete.
      */
-    // Would DS call: scheduler.getNextFireEvent();
     public synchronized FireEvent getNextFireEvent() {
         System.out.println("Queue has: " + queue);
-        if(queue.isEmpty() && isLoaded) {
+        if (queue.isEmpty() && isLoaded) {
             System.out.println("No more events. Marking scheduler as finished");
             isFinished = true;
             notifyAll();
@@ -162,38 +163,53 @@ public class Scheduler implements Runnable {
             try {
                 System.out.println("System is waiting for fire events to be added");
                 wait();
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+            }
         }
         return queue.peek();
     }
 
     /**
+     * Marks a FireEvent as extinguished and removes it from the queue.
      *
-     *
-     * @param event
+     * @param event The FireEvent to mark as extinguished.
      */
     public synchronized void markFireExtinguished(FireEvent event) {
         queue.remove(event);
         System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " Extinguished");
     }
 
+    /**
+     * Edits an existing FireEvent to update the litres needed.
+     *
+     * @param event  The FireEvent to edit.
+     * @param litres The amount of litres to remove from the event's total.
+     */
     public synchronized void editFireEvent(FireEvent event, int litres) {
         event.removeLitres(litres);
     }
 
-    // Signal when all fires from input file are finished?
+    /**
+     * Signals that all processing is complete and notifies any waiting threads.
+     */
     public synchronized void finish() {
         isFinished = true;
         notifyAll();
     }
 
-
-    // Called when thread is finished running
+    /**
+     * Checks if the Scheduler has finished processing.
+     *
+     * @return true if the Scheduler has finished; false otherwise.
+     */
     public synchronized boolean isFinished() {
         return isFinished;
     }
 
-    // Not utilised in iteration #1
+    /**
+     * The main run method for the Scheduler thread.
+     * Waits in a loop until the system is marked as finished.
+     */
     @Override
     public synchronized void run() {
         while (!isFinished) {

@@ -1,21 +1,32 @@
-import static java.lang.Thread.sleep;
-
+/**
+ * The {@code DroneSubsystem} class implements a subsystem that simulates a firefighting drone responding to fire events.
+ * It calculates water needed, performs operations like takeoff, travel, extinguish fire, and returns to base.
+ */
 public class DroneSubsystem implements Runnable {
     private final Scheduler scheduler;
     private final int capacity = 14;  // Max 14L per trip
     private final double cruiseSpeed = 18.0;  // 18 m/s
     private final double takeoffSpeed = 2.0;  // 2 m/s to 20m altitude
-    private final int nozzleFlowRate = 2; // 2L per second\
+    private final int nozzleFlowRate = 2; // 2L per second
     private double travelTimeToFire = 0;
 
+    /**
+     * Constructs a {@code DroneSubsystem} object with the specified scheduler.
+     *
+     * @param scheduler the {@code Scheduler} object responsible for handling fire events.
+     */
     public DroneSubsystem(Scheduler scheduler) {
         this.scheduler = scheduler;
     }
 
-
-    // Method to calculate amount of water needed
-    private int calculateWaterNeeded(String severity){
-        return switch (severity.toLowerCase()){
+    /**
+     * Calculates the amount of water needed to extinguish a fire based on fire severity.
+     *
+     * @param severity the severity level of the fire (e.g., "low", "moderate", "high").
+     * @return the amount of water needed in liters.
+     */
+    private int calculateWaterNeeded(String severity) {
+        return switch (severity.toLowerCase()) {
             case "low" -> 10;
             case "moderate" -> 20;
             case "high" -> 30;
@@ -23,16 +34,21 @@ public class DroneSubsystem implements Runnable {
         };
     }
 
-    // Method to simulate drone takeoff and landing (sleep 10 seconds)
+    /**
+     * Simulates the drone's takeoff to a cruising altitude of 20 meters.
+     * The process takes 10 seconds.
+     */
     private void takeoff() {
         System.out.println(Thread.currentThread().getName() + " taking off to 20m altitude...");
-        sleep(10000);  // Takes 10s to reach altitude at 2m/s
+        sleep(10000);
         System.out.println(Thread.currentThread().getName() + " reached cruising altitude.");
     }
 
-
-    // Method to simulate traveling to center of zone to put out fire
-    // Need to calculate for middle of zone here
+    /**
+     * Simulates the drone traveling to the center of the fire zone.
+     *
+     * @param event the {@code FireEvent} object containing details about the fire zone.
+     */
     private void travelToZoneCenter(FireEvent event) {
         String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
         String[] startCoords = zoneCoords[0].split(",");
@@ -54,32 +70,40 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + ": arrived at fire center at Zone: " + event.getZoneId());
     }
 
-
-    // Method to extinguish fire
+    /**
+     * Simulates the process of extinguishing a fire by dropping water.
+     *
+     * @param amount the amount of water to drop in liters.
+     */
     private void extinguishFire(int amount) {
         System.out.println(Thread.currentThread().getName() + " opening nozzle...");
         sleep(1000); // Takes 1 second to open the nozzle
 
-        int timeToDrop = amount / nozzleFlowRate; // **Time in seconds to drop water**
+        int timeToDrop = amount / nozzleFlowRate; // Time in seconds to drop water
         System.out.println(Thread.currentThread().getName() + " dropping " + amount + "L of firefighting agent at " + nozzleFlowRate + "L/s.");
         sleep(timeToDrop * 1000);  // Time to drop all water
 
         System.out.println(Thread.currentThread().getName() + " nozzle closed.");
     }
 
-
-    //Method to return back to base?
+    /**
+     * Simulates the drone's return to base and its landing process.
+     * The time to base is calculated during travel, and landing takes 10 seconds.
+     */
     private void returnToBase() {
         System.out.println(Thread.currentThread().getName() + " returning to base...");
         sleep((long) (travelTimeToFire * 1000));  // Use stored travel time
 
-        // Simulate landing
         System.out.println(Thread.currentThread().getName() + " descending to ground...");
-        sleep(10000);  // Takes 10s to descend at 2m/s
+        sleep(10000);
         System.out.println(Thread.currentThread().getName() + " landed safely.");
     }
 
-
+    /**
+     * Helper method to pause the execution of a thread for a specified amount of time.
+     *
+     * @param milliseconds the time to sleep in milliseconds.
+     */
     private void sleep(long milliseconds) {
         try {
             Thread.sleep(milliseconds);
@@ -88,9 +112,14 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
+    /**
+     * The main execution method for the drone subsystem.
+     * It continuously retrieves fire events, determines the water needed, and performs the sequence
+     * of operations to respond to and extinguish the fire.
+     */
     @Override
     public synchronized void run() {
-        while(true) {
+        while (true) {
             System.out.println("Inside the drone RUN");
             FireEvent event = scheduler.getNextFireEvent();
 
@@ -99,11 +128,10 @@ public class DroneSubsystem implements Runnable {
             } else {
                 break;
             }
-            // Determine water needed
 
             int totalWaterNeeded = calculateWaterNeeded(event.getSeverity());
             event.setLitres(totalWaterNeeded);
-            while(event.getLitres() > 0){
+            while (event.getLitres() > 0) {
                 takeoff();
                 travelToZoneCenter(event);
                 extinguishFire(Math.min(totalWaterNeeded, capacity));
