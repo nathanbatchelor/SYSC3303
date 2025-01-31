@@ -93,18 +93,16 @@ public class DroneSubsystem implements Runnable {
         while(true) {
             System.out.println("Inside the drone RUN");
             FireEvent event = scheduler.getNextFireEvent();
+
             if (event != null) {
                 System.out.println(Thread.currentThread().getName() + " responding to event: " + event);
+            } else {
+                break;
             }
             // Determine water needed
+
             int totalWaterNeeded = calculateWaterNeeded(event.getSeverity());
-            //int trips = (int)
-//            travelToZoneCenter(event);
-//            extinguishFire(Math.min(totalWaterNeeded, capacity));
-//            scheduler.editFireEvent(event, 10);
-//            returnToBase();
-//            totalWaterNeeded -= capacity;
-                event.setLitres(totalWaterNeeded);
+            event.setLitres(totalWaterNeeded);
             while(event.getLitres() > 0){
                 takeoff();
                 travelToZoneCenter(event);
@@ -119,5 +117,6 @@ public class DroneSubsystem implements Runnable {
 
 
         }
+        System.out.println(Thread.currentThread().getName() + " Drone thread has stopped");
     }
 }

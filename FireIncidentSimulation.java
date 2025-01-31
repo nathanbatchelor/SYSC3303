@@ -12,11 +12,12 @@ public class FireIncidentSimulation {
         schedulerThread.setName("Scheduler");
         schedulerThread.start();
 
+//        try {
+//            Thread.sleep(10000);
+//        } catch (InterruptedException e) {
+//            System.out.println("Error");
+//
+//        }
 
-        System.out.println("Setting up drone");
-        DroneSubsystem drone = new DroneSubsystem(scheduler);
-        Thread droneSubsystem = new Thread(drone);
-        droneSubsystem.setName("Drone Subsystem");
-        droneSubsystem.start();
     }
 }

@@ -28,6 +28,8 @@ public class Scheduler implements Runnable {
 
     private volatile boolean isFinished = false;
 
+    private volatile boolean isLoaded = false;
+
     public Scheduler (String zoneFile, String eventFile) {
         // Future location of drone & FIS objects
         this.zoneFile = zoneFile;
@@ -95,6 +97,16 @@ public class Scheduler implements Runnable {
         }
     }
 
+    public synchronized void setEventsLoaded() {
+        this.isLoaded = true;
+        notifyAll();
+        System.out.println("Setting up drone");
+        DroneSubsystem drone = new DroneSubsystem(this);
+        Thread droneSubsystem = new Thread(drone);
+        droneSubsystem.setName("Drone Subsystem");
+        droneSubsystem.start();
+    }
+
     private int[] parseCoordinates(String coordinate) {
         coordinate = coordinate.replaceAll("[()]", ""); // Remove parentheses
         String[] parts = coordinate.split(";");
@@ -125,12 +137,22 @@ public class Scheduler implements Runnable {
     public synchronized FireEvent getNextFireEvent() {
         // get FireEvents from queue
         System.out.println("Queue has: " + queue);
+        if(queue.isEmpty() && isLoaded) {
+            System.out.println("No more events. Marking scheduler as finished");
+            isFinished = true;
+            notifyAll();
+            return null;
+        }
         while (queue.isEmpty() && !isFinished) {
             try {
+                System.out.println("System is waiting for fire events to be added");
                 wait();
+
+                // Getting stuck here after execution
             } catch (InterruptedException e) {}
 
         }
+
         // return first event. If fire isn't put out, send another drone.
         // Call FIS to see if the fire is out. If so, delete event from queue
         // queue.poll(); returns the first object in the queue, we only want to do this if the fire is extinguished

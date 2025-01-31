@@ -49,9 +49,13 @@ public class FireIncidentSubsystem implements Runnable {
                     scheduler.addFireEvent(fireEvent);
                 }
             }
+            System.out.println("Setting events to loaded");
+            scheduler.setEventsLoaded();
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
     }
 
     /**
