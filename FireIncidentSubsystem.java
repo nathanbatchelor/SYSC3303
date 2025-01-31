@@ -46,10 +46,11 @@ public class FireIncidentSubsystem implements Runnable {
                 if (fireEvent.getZoneId() == zoneId) {
                     System.out.println("FireIncidentSubsystem-Zone " + zoneId + " → New Fire Event: " + fireEvent);
                     scheduler.addFireEvent(fireEvent);
+                    System.out.println("Setting events to loaded");
+                    scheduler.setEventsLoaded();
                 }
             }
-            System.out.println("Setting events to loaded");
-            scheduler.setEventsLoaded();
+
 
         } catch (IOException e) {
             throw new RuntimeException(e);

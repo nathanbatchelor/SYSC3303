@@ -12,12 +12,5 @@ public class FireIncidentSimulation {
         schedulerThread.setName("Scheduler");
         schedulerThread.start();
 
-//        try {
-//            Thread.sleep(10000);
-//        } catch (InterruptedException e) {
-//            System.out.println("Error");
-//
-//        }
-
     }
 }

@@ -187,7 +187,6 @@ public class Scheduler implements Runnable {
     @Override
     public synchronized void run() {
         while (!isFinished) {
-            System.out.println("Inside scheduler Run");
             try {
                 wait();
             } catch (InterruptedException e) {
