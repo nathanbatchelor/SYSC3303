@@ -42,12 +42,11 @@ public class FireIncidentSubsystem implements Runnable {
                 }
 
                 FireEvent fireEvent = parseEvent(line);
-
+                System.out.println(fireEvent.toString());
                 // Only process events for this zone
                 if (fireEvent.getZoneId() == zoneId) {
                     System.out.println("FireIncidentSubsystem-Zone " + zoneId + " → New Fire Event: " + fireEvent);
                     scheduler.addFireEvent(fireEvent);
-                    Thread.sleep(800);
                 }
             }
         } catch (IOException e) {

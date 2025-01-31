@@ -13,7 +13,6 @@ public class DroneSubsystem implements Runnable {
     }
 
 
-
     // Method to calculate amount of water needed
     private int calculateWaterNeeded(String severity){
         return switch (severity.toLowerCase()){
@@ -50,9 +49,9 @@ public class DroneSubsystem implements Runnable {
         double distance = Math.sqrt(Math.pow(centerX - x1, 2) + Math.pow(centerY - y1, 2)); // Euclidean distance
         double travelTime = distance / cruiseSpeed;
 
-        System.out.println(Thread.currentThread().getName() + " traveling to fire center (" + centerX + "," + centerY + ")...");
-        sleep((long) (travelTime * 1000));  // Convert seconds to milliseconds
-        System.out.println(Thread.currentThread().getName() + " arrived at fire center.");
+        System.out.println(Thread.currentThread().getName() + " zone " + event.getZoneId() + "traveling to fire center (" + centerX + "," + centerY + ")...");
+        sleep((long) (travelTime * 1000));
+        System.out.println(Thread.currentThread().getName() + " arrived at fire center at Zone: " + event.getZoneId());
     }
 
 
@@ -91,10 +90,34 @@ public class DroneSubsystem implements Runnable {
 
     @Override
     public synchronized void run() {
-        try {
-            wait();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        while(true) {
+            System.out.println("Inside the drone RUN");
+            FireEvent event = scheduler.getNextFireEvent();
+            if (event != null) {
+                System.out.println(Thread.currentThread().getName() + " responding to event: " + event);
+            }
+            // Determine water needed
+            int totalWaterNeeded = calculateWaterNeeded(event.getSeverity());
+            //int trips = (int)
+//            travelToZoneCenter(event);
+//            extinguishFire(Math.min(totalWaterNeeded, capacity));
+//            scheduler.editFireEvent(event, 10);
+//            returnToBase();
+//            totalWaterNeeded -= capacity;
+                event.setLitres(totalWaterNeeded);
+            while(event.getLitres() > 0){
+                takeoff();
+                travelToZoneCenter(event);
+                extinguishFire(Math.min(totalWaterNeeded, capacity));
+                scheduler.editFireEvent(event, 10);
+                returnToBase();
+            }
+
+            scheduler.markFireExtinguished(event);
+            System.out.println("Fire Extinguished");
+
+
+
         }
     }
 }
