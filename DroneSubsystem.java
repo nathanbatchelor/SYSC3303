@@ -49,9 +49,9 @@ public class DroneSubsystem implements Runnable {
         double distance = Math.sqrt(Math.pow(centerX - x1, 2) + Math.pow(centerY - y1, 2)); // Euclidean distance
         double travelTime = distance / cruiseSpeed;
 
-        System.out.println(Thread.currentThread().getName() + " zone " + event.getZoneId() + "traveling to fire center (" + centerX + "," + centerY + ")...");
+        System.out.println(Thread.currentThread().getName() + ": traveling to Zone: " + event.getZoneId() + " with fire at (" + centerX + "," + centerY + ")...");
         sleep((long) (travelTime * 1000));
-        System.out.println(Thread.currentThread().getName() + " arrived at fire center at Zone: " + event.getZoneId());
+        System.out.println(Thread.currentThread().getName() + ": arrived at fire center at Zone: " + event.getZoneId());
     }
 
 
