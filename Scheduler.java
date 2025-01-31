@@ -1,4 +1,3 @@
-import javax.sound.midi.SysexMessage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -17,27 +16,20 @@ import java.util.*;
 
 public class Scheduler implements Runnable {
 
-    // Queue to hold FireEvents
     private final Queue<FireEvent> queue = new LinkedList<>();
-    // Something to store zones
     private final Map<Integer, FireIncidentSubsystem> zones = new HashMap<>();
-    // File for zones
     private final String zoneFile;
-    // File for Events - To be passed to FIS
     private final String eventFile;
-
     private volatile boolean isFinished = false;
-
     private volatile boolean isLoaded = false;
 
     public Scheduler (String zoneFile, String eventFile) {
-        // Future location of drone & FIS objects
         this.zoneFile = zoneFile;
         this.eventFile = eventFile;
         readZoneFile();
     }
 
-    // Add event file here, pass through to FIS
+
     public void readZoneFile() {
         try {
             File file = new File(this.zoneFile);

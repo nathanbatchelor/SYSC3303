@@ -110,12 +110,8 @@ public class DroneSubsystem implements Runnable {
                 scheduler.editFireEvent(event, 10);
                 returnToBase();
             }
-
             scheduler.markFireExtinguished(event);
             System.out.println("Fire Extinguished");
-
-
-
         }
         System.out.println(Thread.currentThread().getName() + " Drone thread has stopped");
     }
