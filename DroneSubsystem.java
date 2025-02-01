@@ -93,6 +93,8 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " dropping " + amount + "L of firefighting agent at " + nozzleFlowRate + "L/s.");
         sleep(timeToDrop * 1000);  // Time to drop all water
 
+        int remainingCapacity = capacity - amount;
+        System.out.println("Dispensed " + amount + "L. Remaining capacity: " + remainingCapacity + "L.");
         System.out.println(Thread.currentThread().getName() + " nozzle closed.");
     }
 
@@ -105,6 +107,7 @@ public class DroneSubsystem implements Runnable {
         sleep((long) (travelTimeToFire * 1000));  // Use stored travel time
         descend();
     }
+
 
     /**
      * Helper method to pause the execution of a thread for a specified amount of time.
@@ -128,20 +131,19 @@ public class DroneSubsystem implements Runnable {
     public synchronized void run() {
         while (true) {
             FireEvent event = scheduler.getNextFireEvent();
-
             if (event != null) {
                 System.out.println(Thread.currentThread().getName() + " responding to event: " + event);
             } else {
                 break;
             }
-
             int totalWaterNeeded = calculateWaterNeeded(event.getSeverity());
             event.setLitres(totalWaterNeeded);
             while (event.getLitres() > 0) {
                 takeoff();
                 travelToZoneCenter(event);
-                extinguishFire(Math.min(totalWaterNeeded, capacity));
-                scheduler.editFireEvent(event, 10);
+                int waterToDrop = Math.min(event.getLitres(), capacity);
+                extinguishFire(waterToDrop);
+                scheduler.editFireEvent(event, waterToDrop);
                 returnToBase();
             }
             scheduler.markFireExtinguished(event);

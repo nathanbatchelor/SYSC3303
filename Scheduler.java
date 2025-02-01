@@ -65,13 +65,11 @@ public class Scheduler implements Runnable {
                         continue; // Skip header row
                     }
                     System.out.println("Reading line: " + line);
-
                     String[] tokens = line.split(",");
                     if (tokens.length != 3) {
                         System.out.println("Invalid Line: " + line);
                         continue;
                     }
-
                     try {
                         int zoneId = Integer.parseInt(tokens[0].trim());
                         int[] startCoords = parseCoordinates(tokens[1].trim());
@@ -81,7 +79,6 @@ public class Scheduler implements Runnable {
                             System.out.println("Invalid Coordinates: " + line);
                             continue;
                         }
-
                         int x1 = startCoords[0], y1 = startCoords[1];
                         int x2 = endCoords[0], y2 = endCoords[1];
 
@@ -164,6 +161,12 @@ public class Scheduler implements Runnable {
      * @return The next FireEvent in the queue, or null if processing is complete.
      */
     public synchronized FireEvent getNextFireEvent() {
+
+        if (queue.isEmpty()) {
+            System.out.println("Scheduler: Waiting for fire events to be loaded...");
+        } else {
+            System.out.println("Fire Events: " + queue);
+        }
         System.out.println("Queue has: " + queue);
         if (queue.isEmpty() && isLoaded) {
             System.out.println("No more events. Marking scheduler as finished");
