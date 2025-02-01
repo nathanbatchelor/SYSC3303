@@ -127,7 +127,6 @@ public class DroneSubsystem implements Runnable {
     @Override
     public synchronized void run() {
         while (true) {
-            System.out.println("Inside the drone RUN");
             FireEvent event = scheduler.getNextFireEvent();
 
             if (event != null) {

@@ -106,11 +106,12 @@ public class Scheduler implements Runnable {
      */
     public synchronized void setEventsLoaded() {
         if (!isLoaded) {
-            this.isLoaded = true;
-            notifyAll();
-            System.out.println("Setting up drone");
+            isLoaded = true;
+            System.out.println("Scheduler: Fire events are loaded. Notifying waiting threads...");
+            notifyAll(); // Wake up all waiting threads (Drone)
         }
     }
+
 
     /**
      * Parses a string of coordinates from the zone file into an integer array.
@@ -132,6 +133,18 @@ public class Scheduler implements Runnable {
             return null;
         }
     }
+
+    public synchronized void waitForEvents() {
+        while (!isLoaded) {
+            try {
+                System.out.println("Scheduler: Waiting for fire events to be loaded...");
+                wait(); // Wait until events are available
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
 
     /**
      * Adds a FireEvent to the queue and notifies waiting threads.
