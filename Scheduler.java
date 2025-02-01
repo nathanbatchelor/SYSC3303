@@ -161,26 +161,6 @@ public class Scheduler implements Runnable {
      * @return The next FireEvent in the queue, or null if processing is complete.
      */
     public synchronized FireEvent getNextFireEvent() {
-//        if (queue.isEmpty()) {
-//            System.out.println("Scheduler: Waiting for fire events to be loaded...");
-//        } else {
-//            System.out.println("Fire Events: " + queue);
-//        }
-//        if (queue.isEmpty() && isLoaded) {
-//            System.out.println("No more events. Marking scheduler as finished");
-//            isFinished = true;
-//            notifyAll();
-//            return null;
-//        }
-//        while (queue.isEmpty() && !isFinished) {
-//            try {
-//                System.out.println("System is waiting for fire events to be added");
-//                wait();
-//            } catch (InterruptedException e) {
-//            }
-//        }
-//        return queue.peek();
-
         while (queue.isEmpty()) {
             if (isFinished) {
                 System.out.println("Scheduler: No more fire events. Notifying all waiting drones to stop.");
@@ -193,7 +173,7 @@ public class Scheduler implements Runnable {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        }
+        } // peek for multiple drones?
         return queue.poll();
     }
 
