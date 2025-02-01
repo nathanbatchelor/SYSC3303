@@ -129,26 +129,28 @@ public class DroneSubsystem implements Runnable {
      */
     @Override
     public synchronized void run() {
-        while (true) {
-            FireEvent event = scheduler.getNextFireEvent();
-            if (event != null) {
-                System.out.println(Thread.currentThread().getName() + " responding to event: " + event);
-            } else {
-                break;
+        try {
+            while (true) {
+                FireEvent event = scheduler.getNextFireEvent();
+                if (event != null) {
+                    System.out.println(Thread.currentThread().getName() + " responding to event: " + event);
+                } else {
+                    break;
+                }
+                int totalWaterNeeded = calculateWaterNeeded(event.getSeverity());
+                event.setLitres(totalWaterNeeded);
+                while (event.getLitres() > 0) {
+                    takeoff();
+                    travelToZoneCenter(event);
+                    int waterToDrop = Math.min(event.getLitres(), capacity);
+                    extinguishFire(waterToDrop);
+                    scheduler.editFireEvent(event, waterToDrop);
+                    returnToBase();
+                }
+                scheduler.markFireExtinguished(event);
+                System.out.println("Fire Extinguished");
             }
-            int totalWaterNeeded = calculateWaterNeeded(event.getSeverity());
-            event.setLitres(totalWaterNeeded);
-            while (event.getLitres() > 0) {
-                takeoff();
-                travelToZoneCenter(event);
-                int waterToDrop = Math.min(event.getLitres(), capacity);
-                extinguishFire(waterToDrop);
-                scheduler.editFireEvent(event, waterToDrop);
-                returnToBase();
-            }
-            scheduler.markFireExtinguished(event);
-            System.out.println("Fire Extinguished");
-        }
-        System.out.println(Thread.currentThread().getName() + " Drone thread has stopped");
+            System.out.println(Thread.currentThread().getName() + " Drone thread has stopped");
+        } catch (Exception e) {}
     }
 }
