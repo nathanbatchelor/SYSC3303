@@ -48,6 +48,7 @@ public class FireIncidentSubsystem implements Runnable {
      */
     @Override
     public synchronized void run() {
+        boolean eventsAdded = false;
         System.out.println(Thread.currentThread().getName() + " running for Zone " + zoneId);
 
         try (BufferedReader reader = new BufferedReader(new FileReader(eventFile))) {
@@ -64,12 +65,17 @@ public class FireIncidentSubsystem implements Runnable {
                 if (fireEvent.getZoneId() == zoneId) {
                     System.out.println("FireIncidentSubsystem-Zone " + zoneId + " → New Fire Event: " + fireEvent);
                     scheduler.addFireEvent(fireEvent);
+                    eventsAdded = true;
                     System.out.println("Setting events to loaded");
                     scheduler.setEventsLoaded();
                 }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+        // Only call if atleast one event was added
+        if (eventsAdded) {
+            scheduler.setEventsLoaded();
         }
     }
 

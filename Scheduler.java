@@ -27,6 +27,7 @@ public class Scheduler implements Runnable {
     private final String eventFile;
     private volatile boolean isFinished = false;
     private volatile boolean isLoaded = false;
+    private boolean droneStarted = false;
 
     /**
      * Constructs a Scheduler object with specified zone and event files.
@@ -104,13 +105,19 @@ public class Scheduler implements Runnable {
      * Starts the DroneSubsystem in a new thread.
      */
     public synchronized void setEventsLoaded() {
-        this.isLoaded = true;
-        notifyAll();
-        System.out.println("Setting up drone");
-        DroneSubsystem drone = new DroneSubsystem(this);
-        Thread droneSubsystem = new Thread(drone);
-        droneSubsystem.setName("Drone Subsystem");
-        droneSubsystem.start();
+        if (!isLoaded) {
+            this.isLoaded = true;
+            notifyAll();
+            System.out.println("Setting up drone");
+        }
+        if (!droneStarted) {
+            droneStarted = true;
+            DroneSubsystem drone = new DroneSubsystem(this);
+            Thread droneSubsystem = new Thread(drone);
+            droneSubsystem.setName("Drone Subsystem");
+            droneSubsystem.start();
+        }
+
     }
 
     /**
