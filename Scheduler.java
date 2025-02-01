@@ -161,13 +161,11 @@ public class Scheduler implements Runnable {
      * @return The next FireEvent in the queue, or null if processing is complete.
      */
     public synchronized FireEvent getNextFireEvent() {
-
         if (queue.isEmpty()) {
             System.out.println("Scheduler: Waiting for fire events to be loaded...");
         } else {
             System.out.println("Fire Events: " + queue);
         }
-        System.out.println("Queue has: " + queue);
         if (queue.isEmpty() && isLoaded) {
             System.out.println("No more events. Marking scheduler as finished");
             isFinished = true;
