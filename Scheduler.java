@@ -110,14 +110,6 @@ public class Scheduler implements Runnable {
             notifyAll();
             System.out.println("Setting up drone");
         }
-        if (!droneStarted) {
-            droneStarted = true;
-            DroneSubsystem drone = new DroneSubsystem(this);
-            Thread droneSubsystem = new Thread(drone);
-            droneSubsystem.setName("Drone Subsystem");
-            droneSubsystem.start();
-        }
-
     }
 
     /**
@@ -211,6 +203,10 @@ public class Scheduler implements Runnable {
      */
     public synchronized boolean isFinished() {
         return isFinished;
+    }
+
+    public synchronized boolean isEventsLoaded() {
+        return isLoaded;
     }
 
     /**

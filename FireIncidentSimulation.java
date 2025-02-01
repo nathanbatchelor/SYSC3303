@@ -10,5 +10,21 @@ public class FireIncidentSimulation {
         Thread schedulerThread = new Thread(scheduler);
         schedulerThread.setName("Scheduler");
         schedulerThread.start();
+
+        // Create the DroneSubsystem Thread
+        DroneSubsystem droneSubsystem = new DroneSubsystem(scheduler);
+        Thread droneThread = new Thread(droneSubsystem);
+        droneThread.setName("Drone Subsystem");
+
+        // Wait until events are loaded before starting drone
+        while (!scheduler.isEventsLoaded()) {
+            try {
+                Thread.sleep(500); // Wait and check again
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        droneThread.start();
     }
 }
