@@ -132,11 +132,13 @@ public class DroneSubsystem implements Runnable {
     public synchronized void run() {
         try {
             while (true) {
-                FireEvent event = scheduler.getNextFireEvent();
-                while (event == null) {
-                    System.out.println(Thread.currentThread().getName() + " waiting for fire event...");
-                    wait();
+                FireEvent event;
+                synchronized (scheduler) {
                     event = scheduler.getNextFireEvent();
+                    if (event == null) {
+                        System.out.println("No event found.");
+                        break;
+                    }
                 }
                 System.out.println(Thread.currentThread().getName() + " responding to event: " + event);
 

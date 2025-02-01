@@ -104,7 +104,7 @@ public class Scheduler implements Runnable {
     public synchronized void setEventsLoaded() {
         if (!isLoaded) {
             isLoaded = true;
-            System.out.println("Scheduler: Fire events are loaded. Notifying waiting threads...");
+            System.out.println("Scheduler: Fire events are loaded. Notifying waiting drones...");
             notifyAll(); // Wake up all waiting threads (Drone)
         }
     }
@@ -161,25 +161,40 @@ public class Scheduler implements Runnable {
      * @return The next FireEvent in the queue, or null if processing is complete.
      */
     public synchronized FireEvent getNextFireEvent() {
-        if (queue.isEmpty()) {
-            System.out.println("Scheduler: Waiting for fire events to be loaded...");
-        } else {
-            System.out.println("Fire Events: " + queue);
-        }
-        if (queue.isEmpty() && isLoaded) {
-            System.out.println("No more events. Marking scheduler as finished");
-            isFinished = true;
-            notifyAll();
-            return null;
-        }
-        while (queue.isEmpty() && !isFinished) {
+//        if (queue.isEmpty()) {
+//            System.out.println("Scheduler: Waiting for fire events to be loaded...");
+//        } else {
+//            System.out.println("Fire Events: " + queue);
+//        }
+//        if (queue.isEmpty() && isLoaded) {
+//            System.out.println("No more events. Marking scheduler as finished");
+//            isFinished = true;
+//            notifyAll();
+//            return null;
+//        }
+//        while (queue.isEmpty() && !isFinished) {
+//            try {
+//                System.out.println("System is waiting for fire events to be added");
+//                wait();
+//            } catch (InterruptedException e) {
+//            }
+//        }
+//        return queue.peek();
+
+        while (queue.isEmpty()) {
+            if (isFinished) {
+                System.out.println("Scheduler: No more fire events. Notifying all waiting drones to stop.");
+                notifyAll();  // Notify all waiting threads (drones) to exit
+                return null;
+            }
             try {
-                System.out.println("System is waiting for fire events to be added");
+                System.out.println("Scheduler: Waiting for fire events to be added...");
                 wait();
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
-        return queue.peek();
+        return queue.poll();
     }
 
     /**
@@ -190,6 +205,12 @@ public class Scheduler implements Runnable {
     public synchronized void markFireExtinguished(FireEvent event) {
         queue.remove(event);
         System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " Extinguished");
+
+        if (queue.isEmpty()) {
+            System.out.println("Scheduler: All fires events have been marked as extinguished. Shutting down.");
+            isFinished = true;
+            notifyAll();
+        }
     }
 
     /**
