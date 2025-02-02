@@ -42,6 +42,10 @@ class FireIncidentSubsystemTest {
         Thread fireIncidentSubsystemThread = new Thread(fireIncidentSubsystem);
         fireIncidentSubsystemThread.start();
 
+//        DroneSubsystem drone1 = new DroneSubsystem(scheduler);
+//        Thread dronethread = new Thread(drone1);
+//        dronethread.start();
+
         // Wait for FIS thread to complete
         fireIncidentSubsystemThread.join();
 
@@ -52,6 +56,8 @@ class FireIncidentSubsystemTest {
         assertEquals("FIRE_DETECTED", event.getEventType());
         assertEquals("High", event.getSeverity());
 
+
+        scheduler.markFireExtinguished(event);
         // Nothing else was queued
         event = scheduler.getNextFireEvent();
         assertNull(event);
