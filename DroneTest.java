@@ -8,14 +8,15 @@ public class DroneTest {
      */
     @Test
     void testDroneCommunications() throws InterruptedException {
-        Scheduler scheduler = new Scheduler("src\\test_zone_file.csv", "src\\test_event_file.csv");
+        Scheduler scheduler = new Scheduler("input//test_zone_file.csv", "input//test_event_file.csv");
         Thread drone = new Thread(new DroneSubsystem(scheduler));
         drone.start();
+
         Thread.sleep(1000);
         assertTrue(drone.isAlive());
         Thread.sleep(40000);
         assertTrue(drone.isAlive());
         Thread.sleep(40000);
-        assertTrue(!drone.isAlive());
+        assertFalse(drone.isAlive());
     }
 }

@@ -40,7 +40,7 @@ public class DroneSubsystem implements Runnable {
      */
     private void takeoff() {
         System.out.println(Thread.currentThread().getName() + " taking off to 20m altitude...");
-        sleep(10000);
+        sleep((long) (5000 * takeoffSpeed));
         System.out.println(Thread.currentThread().getName() + " reached cruising altitude.");
     }
 
@@ -50,9 +50,10 @@ public class DroneSubsystem implements Runnable {
      */
     private void descend() {
         System.out.println(Thread.currentThread().getName() + " descend to 20m altitude...");
-        sleep(10000);
+        sleep((long) (5000 * takeoffSpeed));
         System.out.println(Thread.currentThread().getName() + " reached ground station.");
     }
+
 
     /**
      * Simulates the drone traveling to the center of the fire zone.
@@ -72,7 +73,7 @@ public class DroneSubsystem implements Runnable {
         int centerX = (x1 + x2) / 2;
         int centerY = (y1 + y2) / 2;
 
-        double distance = Math.sqrt(Math.pow(centerX - x1, 2) + Math.pow(centerY - y1, 2)); // Euclidean distance
+        double distance = Math.sqrt(Math.pow(centerX - x1, 2) + Math.pow(centerY - y1, 2));
         double travelTime = distance / cruiseSpeed;
         travelTimeToFire = travelTime;
 
@@ -112,6 +113,7 @@ public class DroneSubsystem implements Runnable {
 
     /**
      * Helper method to pause the execution of a thread for a specified amount of time.
+     * Used for simulating drones traveling
      *
      * @param milliseconds the time to sleep in milliseconds.
      */

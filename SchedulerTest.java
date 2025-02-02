@@ -16,7 +16,7 @@ class SchedulerTest {
      */
     @BeforeEach
     void setUp() {
-        scheduler = new Scheduler("test_zone_file.csv", "test_event_file.csv");
+        scheduler = new Scheduler("input//test_zone_file.csv", "input//test_event_file.csv");
     }
 
     /**
