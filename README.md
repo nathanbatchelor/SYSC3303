@@ -36,4 +36,21 @@ FireEvent.java
 - Stores zone details, severity, and timestamp.
 
 
+# How to Run
+Open the submitted "Source Code" Folder in IntelliJ
+
+We have included a test file for running the simulation in the input folder
+
+To run the Simulation: 
+1. Control + Shift + R
+2. Right Click FireIncidentSimulation.java and press run
+3. Click the run button in the top right corner of the IDE
+
+If you would like to use another input file, add it to the input folder and change the file name in FireIncidentSimulation
+```
+String fireIncidentFile = "input//your_file_here.csv
+```
+
+
+
 
