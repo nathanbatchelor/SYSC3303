@@ -28,6 +28,15 @@ public class Scheduler implements Runnable {
     private volatile boolean isFinished = false;
     private volatile boolean isLoaded = false;
     private boolean droneStarted = false;
+    private SchedulerState state = SchedulerState.WAITING_FOR_EVENTS; // Default State
+
+
+    public enum SchedulerState {
+        WAITING_FOR_EVENTS,
+        ASSIGNING_DRONE,
+        WAITING_FOR_DRONE,
+        SHUTTING_DOWN,
+    }
 
     /**
      * Constructs a Scheduler object with specified zone and event files.
@@ -177,6 +186,24 @@ public class Scheduler implements Runnable {
         return queue.poll();
     }
 
+
+    // Method to update fire status
+    public synchronized void updateFireStatus(FireEvent event, int waterDropped) {
+        event.removeLitres(waterDropped);
+        int remainingLiters = event.getLitres();
+
+        if (remainingLiters > 0 && waterDropped > 0) {
+            // Only re-add the event to the queue if it still needs to be extinguished
+            System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " still needs " + remainingLiters + "L.");
+            ((LinkedList<FireEvent>) queue).addFirst(event);
+            notifyAll();
+        } else {
+            markFireExtinguished(event);
+        }
+    }
+
+
+
     /**
      * Marks a FireEvent as extinguished and removes it from the queue.
      *
@@ -228,6 +255,17 @@ public class Scheduler implements Runnable {
      * The main run method for the Scheduler thread.
      * Waits in a loop until the system is marked as finished.
      */
+//    @Override
+//    public synchronized void run() {
+//        while (!isFinished) {
+//            try {
+//                wait();
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
+
     @Override
     public synchronized void run() {
         while (!isFinished) {
@@ -238,4 +276,10 @@ public class Scheduler implements Runnable {
             }
         }
     }
+
 }
+
+// Drone puts out fire
+// Case: Still has agent and battery: Get current coordinates, calculate distance to next fire, go to fire, return to base.
+// Need to check if the drone has enough battery to go to the next fire and get home without dying.
+// Else: go to base

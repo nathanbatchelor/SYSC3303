@@ -76,6 +76,8 @@ public class FireIncidentSubsystem implements Runnable {
         // Only call if atleast one event was added
         if (eventsAdded) {
             scheduler.setEventsLoaded();
+            System.out.println("Setting events to loaded");
+            System.out.println("----------------------------------------\n");
         }
     }
 

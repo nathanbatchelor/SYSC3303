@@ -8,7 +8,12 @@ public class DroneSubsystem implements Runnable {
     private final double cruiseSpeed = 18.0;  // 18 m/s
     private final double takeoffSpeed = 2.0;  // 2 m/s to 20m altitude
     private final int nozzleFlowRate = 2; // 2L per second
+    private double batteryLife = 1800; // Battery Life of Drone
     private double travelTimeToFire = 0;
+    private int remainingAgent; // Amount of agent remaining
+    private int currentX = 0; // Drones current X position
+    private int currentY = 0; // Drones current Y position
+
 
     /**
      * Constructs a DroneSubsystem object with the specified scheduler.
@@ -16,7 +21,9 @@ public class DroneSubsystem implements Runnable {
      * @param scheduler the Scheduler object responsible for handling fire events.
      */
     public DroneSubsystem(Scheduler scheduler) {
+
         this.scheduler = scheduler;
+        this.remainingAgent = capacity;
     }
 
     /**
@@ -79,6 +86,8 @@ public class DroneSubsystem implements Runnable {
 
         System.out.println(Thread.currentThread().getName() + ": traveling to Zone: " + event.getZoneId() + " with fire at (" + centerX + "," + centerY + ")...");
         sleep((long) (travelTime * 1000));
+        batteryLife -= travelTime;
+        System.out.println("Battery Life is now: " + batteryLife);
         System.out.println(Thread.currentThread().getName() + ": arrived at fire center at Zone: " + event.getZoneId());
     }
 
@@ -88,26 +97,38 @@ public class DroneSubsystem implements Runnable {
      * @param amount the amount of water to drop in liters.
      */
     private void extinguishFire(int amount) {
-        System.out.println(Thread.currentThread().getName() + " opening nozzle...");
+        System.out.println("\n" + Thread.currentThread().getName() + " opening nozzle...");
         sleep(1000); // Takes 1 second to open the nozzle
+        batteryLife -= 1;
 
         int timeToDrop = amount / nozzleFlowRate; // Time in seconds to drop water
         System.out.println(Thread.currentThread().getName() + " dropping " + amount + "L of firefighting agent at " + nozzleFlowRate + "L/s.");
         sleep(timeToDrop * 1000);  // Time to drop all water
+        batteryLife -= timeToDrop;
 
-        int remainingCapacity = capacity - amount;
-        System.out.println("Dispensed " + amount + "L. Remaining capacity: " + remainingCapacity + "L.");
-        System.out.println(Thread.currentThread().getName() + " nozzle closed.");
+        //int remainingAgent = capacity - amount;
+        remainingAgent -= amount;
+
+        System.out.println("Dispensed " + amount + "L. Remaining capacity: " + remainingAgent + "L.");
+        System.out.println("\n" + Thread.currentThread().getName() + " closing nozzle...");
+        sleep(1000); // Takes 1 second to close the nozzle
+        batteryLife -= 1;
+        System.out.println(Thread.currentThread().getName() + " nozzle closed.\n");
     }
 
     /**
      * Simulates the drone's return to base and its landing process.
      * The time to base is calculated during travel, and landing takes 10 seconds.
      */
-    private void returnToBase() {
-        System.out.println(Thread.currentThread().getName() + " returning to base...");
-        sleep((long) (travelTimeToFire * 1000));  // Use stored travel time
+    private void returnToBase(FireEvent event) {
+        
+        System.out.println("\n" +Thread.currentThread().getName() + " returning to base...\n");
+        sleep((long) ((scheduler.calculateDistanceToHomeBase(event)/18) * 1000));  // Use stored travel time //0,0 to zone 1, zone1 to zone2
+        System.out.println();
         descend();
+        System.out.println("----------------------------------------\n");
+        currentX = 0;
+        currentY = 0;
     }
 
 
@@ -135,8 +156,11 @@ public class DroneSubsystem implements Runnable {
         try {
             while (true) {
                 FireEvent event;
+
                 synchronized (scheduler) {
                     event = scheduler.getNextFireEvent();
+
+
                     if (event == null) {
                         System.out.println("No event found.");
                         break;
