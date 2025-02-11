@@ -66,7 +66,8 @@ public class FireIncidentSubsystem implements Runnable {
                     System.out.println("FireIncidentSubsystem-Zone " + zoneId + " → New Fire Event: " + fireEvent);
                     scheduler.addFireEvent(fireEvent);
                     eventsAdded = true;
-                    System.out.println("Setting events to loaded");
+//                    System.out.println("Setting events to loaded");
+//                    System.out.println("----------------------------------------\n");
                     scheduler.setEventsLoaded();
                 }
             }

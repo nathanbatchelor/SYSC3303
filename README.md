@@ -13,5 +13,5 @@ Checklist
 - [ ] 
 - [ ] 
 - [ ] 
-- [ ] 
+- [ ] Have drone check if it can handle alone, if no sleep 7S then send another
 - [ ] 

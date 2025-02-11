@@ -113,6 +113,7 @@ public class Scheduler implements Runnable {
     public synchronized void setEventsLoaded() {
         if (!isLoaded) {
             isLoaded = true;
+            state = SchedulerState.WAITING_FOR_DRONE;
             System.out.println("Scheduler: Fire events are loaded. Notifying waiting drones...");
             notifyAll(); // Wake up all waiting threads (Drone)
         }
@@ -158,17 +159,91 @@ public class Scheduler implements Runnable {
      * @param event The FireEvent to add to the queue.
      */
     public synchronized void addFireEvent(FireEvent event) {
+        int totalWaterNeeded = calculateWaterNeeded(event.getSeverity());
+        event.setLitres(totalWaterNeeded);
         queue.add(event);
         notifyAll();
         System.out.println("Scheduler: Added FireEvent → " + event);
     }
 
     /**
-     * Retrieves the next FireEvent from the queue and returns it.
-     * If the queue is empty, waits until a FireEvent is added or signals the system is finished.
+     * Calculates the amount of water needed to extinguish a fire based on fire severity.
      *
-     * @return The next FireEvent in the queue, or null if processing is complete.
+     * @param severity the severity level of the fire (e.g., "low", "moderate", "high").
+     * @return the amount of water needed in liters.
      */
+    private int calculateWaterNeeded(String severity) {
+        return switch (severity.toLowerCase()) {
+            case "low" -> 10;
+            case "moderate" -> 20;
+            case "high" -> 30;
+            default -> 0;
+        };
+    }
+
+
+    /**
+     * Simulates the drone traveling to the center of the fire zone.
+     *
+     * @param event the FireEvent object containing details about the fire zone.
+     */
+    public double calculateTravelTime(int xDrone, int yDrone, FireEvent event) {
+        int cruiseSpeed = 18;
+
+        // Extract zone coordinates from the FireEvent
+        String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
+        String[] startCoords = zoneCoords[0].split(",");
+        String[] endCoords = zoneCoords[1].split(",");
+
+        // Parse the coordinates
+        int x1 = Integer.parseInt(startCoords[0].trim());
+        int y1 = Integer.parseInt(startCoords[1].trim());
+        int x2 = Integer.parseInt(endCoords[0].trim());
+        int y2 = Integer.parseInt(endCoords[1].trim());
+
+        // Calculate the center of the fire zone
+        int centerX = (x1 + x2) / 2;
+        int centerY = (y1 + y2) / 2;
+
+        // Calculate the distance from the drone's position to the fire zone center
+        double distance = Math.sqrt(Math.pow(centerX - xDrone, 2) + Math.pow(centerY - yDrone, 2));
+
+        // Calculate travel time based on cruise speed
+        double travelTimeToFire = distance / cruiseSpeed;
+
+        System.out.println("\nScheduler: Travel time to fire: " + travelTimeToFire);
+        return travelTimeToFire;
+    }
+
+
+    public double calculateDistanceToHomeBase(FireEvent event) {
+        // Home base coordinates
+        int homeBaseX = 0;
+        int homeBaseY = 0;
+
+        // Extract zone coordinates from the FireEvent
+        String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
+        String[] startCoords = zoneCoords[0].split(",");
+        String[] endCoords = zoneCoords[1].split(",");
+
+        // Parse the coordinates
+        int x1 = Integer.parseInt(startCoords[0].trim());
+        int y1 = Integer.parseInt(startCoords[1].trim());
+        int x2 = Integer.parseInt(endCoords[0].trim());
+        int y2 = Integer.parseInt(endCoords[1].trim());
+
+        // Calculate the center of the fire zone
+        int centerX = (x1 + x2) / 2;
+        int centerY = (y1 + y2) / 2;
+
+        // Calculate the distance from the center of the zone to home base
+        double distanceToHomeBase = Math.sqrt(Math.pow(centerX - homeBaseX, 2) + Math.pow(centerY - homeBaseY, 2));
+        System.out.println("\nScheduler: Distance to home base is: " + distanceToHomeBase + " meters\n" + "Scheduler: Time to Home Base is: " + distanceToHomeBase/18 + " seconds\n");
+
+        return distanceToHomeBase;
+    }
+
+
     public synchronized FireEvent getNextFireEvent() {
         while (queue.isEmpty()) {
             if (isFinished) {
@@ -184,6 +259,45 @@ public class Scheduler implements Runnable {
             }
         } // peek for multiple drones?
         return queue.poll();
+    }
+
+
+    /**
+     * Retrieves the next FireEvent from the queue and returns it.
+     * If the queue is empty, waits until a FireEvent is added or signals the system is finished.
+     *
+     * @return The next FireEvent in the queue, or null if processing is complete.
+     */
+    public synchronized FireEvent getAdditionalFireEvent(double batteryLife,int x,int y) {
+//        while (queue.isEmpty()) {
+//            if (isFinished) {
+//                System.out.println("Scheduler: No more fire events. Notifying all waiting drones to stop.");
+//                notifyAll();  // Notify all waiting threads (drones) to exit
+//                return null;
+//            }
+//            try {
+//                System.out.println("Scheduler: Waiting for fire events to be added...");
+//                wait();
+//            } catch (InterruptedException e) {
+//                Thread.currentThread().interrupt();
+//            }
+//
+//        }
+
+        // Process the queue to find a suitable fire event
+        for (FireEvent currentEvent : queue) {
+            double range = calculateTravelTime(x, y, currentEvent);
+            double travelToHome = calculateDistanceToHomeBase(currentEvent);
+
+            // Check if the event satisfies the condition
+            if (range + travelToHome < batteryLife) {
+                System.out.println("\nSending new event to the drone\n");
+                queue.remove(currentEvent); // Remove the event from the queue
+                return currentEvent;       // Return the event
+            }
+        }
+
+       return null;
     }
 
 
@@ -210,14 +324,24 @@ public class Scheduler implements Runnable {
      * @param event The FireEvent to mark as extinguished.
      */
     public synchronized void markFireExtinguished(FireEvent event) {
-        queue.remove(event);
-        System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " Extinguished");
+        //queue.remove(event);
+        System.out.println("\nScheduler: Fire at Zone: " + event.getZoneId() + " Extinguished\n");
 
         if (queue.isEmpty()) {
             System.out.println("Scheduler: All fires events have been marked as extinguished. Shutting down.");
+//            try {
+//                Thread.sleep(10000);
+//            } catch (Exception e) {
+//                Thread.currentThread().interrupt();
+            state = SchedulerState.SHUTTING_DOWN;
             isFinished = true;
             notifyAll();
         }
+    }
+
+
+    public synchronized void removeFireEvent(FireEvent event) {
+        queue.remove(event);
     }
 
     /**

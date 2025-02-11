@@ -26,20 +26,20 @@ public class DroneSubsystem implements Runnable {
         this.remainingAgent = capacity;
     }
 
-    /**
-     * Calculates the amount of water needed to extinguish a fire based on fire severity.
-     *
-     * @param severity the severity level of the fire (e.g., "low", "moderate", "high").
-     * @return the amount of water needed in liters.
-     */
-    private int calculateWaterNeeded(String severity) {
-        return switch (severity.toLowerCase()) {
-            case "low" -> 10;
-            case "moderate" -> 20;
-            case "high" -> 30;
-            default -> 0;
-        };
-    }
+//    /**
+//     * Calculates the amount of water needed to extinguish a fire based on fire severity.
+//     *
+//     * @param severity the severity level of the fire (e.g., "low", "moderate", "high").
+//     * @return the amount of water needed in liters.
+//     */
+//    private int calculateWaterNeeded(String severity) {
+//        return switch (severity.toLowerCase()) {
+//            case "low" -> 10;
+//            case "moderate" -> 20;
+//            case "high" -> 30;
+//            default -> 0;
+//        };
+//    }
 
     /**
      * Simulates the drone's takeoff to a cruising altitude of 20 meters.
@@ -62,33 +62,44 @@ public class DroneSubsystem implements Runnable {
     }
 
 
+    private double travelHomeCalculation(){
+        return Math.sqrt(Math.pow(currentX, 2) + Math.pow(currentY, 2));
+    }
+
+
     /**
      * Simulates the drone traveling to the center of the fire zone.
      *
      * @param event the FireEvent object containing details about the fire zone.
      */
-    private void travelToZoneCenter(FireEvent event) {
+    private double travelToZoneCenter(double travelTime, FireEvent event) {
+
+        // Extract zone coordinates from the FireEvent
         String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
         String[] startCoords = zoneCoords[0].split(",");
         String[] endCoords = zoneCoords[1].split(",");
 
+        // Parse the coordinates
         int x1 = Integer.parseInt(startCoords[0].trim());
         int y1 = Integer.parseInt(startCoords[1].trim());
         int x2 = Integer.parseInt(endCoords[0].trim());
         int y2 = Integer.parseInt(endCoords[1].trim());
 
+        // Calculate the center of the fire zone
         int centerX = (x1 + x2) / 2;
         int centerY = (y1 + y2) / 2;
 
-        double distance = Math.sqrt(Math.pow(centerX - x1, 2) + Math.pow(centerY - y1, 2));
-        double travelTime = distance / cruiseSpeed;
-        travelTimeToFire = travelTime;
 
         System.out.println(Thread.currentThread().getName() + ": traveling to Zone: " + event.getZoneId() + " with fire at (" + centerX + "," + centerY + ")...");
         sleep((long) (travelTime * 1000));
         batteryLife -= travelTime;
         System.out.println("Battery Life is now: " + batteryLife);
         System.out.println(Thread.currentThread().getName() + ": arrived at fire center at Zone: " + event.getZoneId());
+
+        currentX = centerX;
+        currentY = centerY;
+
+        return travelTime;
     }
 
     /**
@@ -168,20 +179,47 @@ public class DroneSubsystem implements Runnable {
                 }
                 System.out.println(Thread.currentThread().getName() + " responding to event: " + event);
 
-                int totalWaterNeeded = calculateWaterNeeded(event.getSeverity());
-                event.setLitres(totalWaterNeeded);
+                while (event != null) {
+                    if (currentX == 0 && currentY == 0) {
+                        takeoff();
+                    }
+                    double travelTime = scheduler.calculateTravelTime(currentX, currentY, event);
+                    travelToZoneCenter(travelTime, event);
 
-                while (event.getLitres() > 0) {
-                    takeoff();
-                    travelToZoneCenter(event);
-                    int waterToDrop = Math.min(event.getLitres(), capacity);
+                    int waterToDrop = Math.min(event.getLitres(), remainingAgent);
                     extinguishFire(waterToDrop);
-                    scheduler.editFireEvent(event, waterToDrop);
-                    returnToBase();
+                    scheduler.updateFireStatus(event, waterToDrop);
+                    FireEvent lastEvent = event;
+
+                    if (remainingAgent <= 0) {
+                        System.out.println(Thread.currentThread().getName() + " has run out of agent. Returning to base.");
+                        returnToBase(lastEvent); // Ensure the drone returns to base when out of firefighting agent
+                        remainingAgent = capacity; // Refuel agent
+                        batteryLife = 1800; // Recharge battery
+                        break; // Exit the loop and check for the next fire event
+                    }
+
+                    // Check for leftover agent and battery life
+                    if (remainingAgent > 0 && batteryLife > 0) {
+                        synchronized (scheduler) {
+                            event = scheduler.getAdditionalFireEvent(batteryLife, currentX, currentY);
+                            if (event == null) {
+                                returnToBase(lastEvent);
+                                remainingAgent = capacity; // Refuel agent
+                                batteryLife = 1800; // Recharge battery
+                                break;
+                            }
+                        }
+                    } else {
+                        returnToBase(lastEvent);
+                        remainingAgent = capacity; // Refuel agent
+                        batteryLife = 1800; // Recharge battery
+                        break;
+                    }
                 }
-                scheduler.markFireExtinguished(event);
-                System.out.println("Fire Extinguished");
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
