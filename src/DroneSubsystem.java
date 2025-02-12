@@ -49,7 +49,7 @@ public class DroneSubsystem implements Runnable {
 //            default -> 0;
 //        };
 //    }
-
+    
     public void displayState() {
         switch(currentState) {
             case IDLE:
@@ -67,30 +67,11 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
-    public void transitionState() {
-        switch(currentState) {
-            case IDLE:
-                currentState = DroneState.ON_ROUTE;
-                break;
-            case ON_ROUTE:
-                currentState = DroneState.DROPPING_AGENT;
-                break;
-            case DROPPING_AGENT:
-                currentState = DroneState.RETURNING;
-                break;
-            case RETURNING:
-                currentState = DroneState.IDLE;
-                break;
-        }
-    }
-
     /**
      * Simulates the drone's takeoff to a cruising altitude of 20 meters.
      * The process takes 10 seconds.
      */
     private void takeoff() {
-        transitionState();
-        displayState();
         System.out.println(Thread.currentThread().getName() + " taking off to 20m altitude...");
         sleep((long) (5000 * takeoffSpeed));
         System.out.println(Thread.currentThread().getName() + " reached cruising altitude.");
@@ -134,6 +115,8 @@ public class DroneSubsystem implements Runnable {
         int centerX = (x1 + x2) / 2;
         int centerY = (y1 + y2) / 2;
 
+        currentState = DroneState.ON_ROUTE;
+        displayState();
 
         System.out.println(Thread.currentThread().getName() + ": traveling to Zone: " + event.getZoneId() + " with fire at (" + centerX + "," + centerY + ")...");
         sleep((long) (travelTime * 1000));
@@ -157,7 +140,7 @@ public class DroneSubsystem implements Runnable {
         sleep(1000); // Takes 1 second to open the nozzle
         batteryLife -= 1;
 
-        transitionState();
+        currentState = DroneState.DROPPING_AGENT;
         displayState();
 
         int timeToDrop = amount / nozzleFlowRate; // Time in seconds to drop water
@@ -180,7 +163,7 @@ public class DroneSubsystem implements Runnable {
      * The time to base is calculated during travel, and landing takes 10 seconds.
      */
     private void returnToBase(FireEvent event) {
-        transitionState();
+        currentState = DroneState.RETURNING;
         displayState();
         System.out.println("\n" +Thread.currentThread().getName() + " returning to base...\n");
         sleep((long) ((scheduler.calculateDistanceToHomeBase(event)/18) * 1000));  // Use stored travel time //0,0 to zone 1, zone1 to zone2
@@ -189,6 +172,8 @@ public class DroneSubsystem implements Runnable {
         System.out.println("----------------------------------------\n");
         currentX = 0;
         currentY = 0;
+        currentState = DroneState.IDLE;
+        displayState();
     }
 
 
