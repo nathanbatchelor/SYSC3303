@@ -13,6 +13,14 @@ public class DroneSubsystem implements Runnable {
     private int remainingAgent; // Amount of agent remaining
     private int currentX = 0; // Drones current X position
     private int currentY = 0; // Drones current Y position
+    private DroneState currentState;
+
+    public enum DroneState {
+        IDLE,
+        ON_ROUTE,
+        DROPPING_AGENT,
+        RETURNING
+    }
 
 
     /**
@@ -24,6 +32,7 @@ public class DroneSubsystem implements Runnable {
 
         this.scheduler = scheduler;
         this.remainingAgent = capacity;
+        this.currentState = DroneState.IDLE;
     }
 
 //    /**
@@ -41,11 +50,47 @@ public class DroneSubsystem implements Runnable {
 //        };
 //    }
 
+    public void displayState() {
+        switch(currentState) {
+            case IDLE:
+                System.out.println("Drone is currently idle.");
+                break;
+            case ON_ROUTE:
+                System.out.println("Drone is on route to fire.");
+                break;
+            case DROPPING_AGENT:
+                System.out.println("Drone is dropping agent on fire.");
+                break;
+            case RETURNING:
+                System.out.println("Drone is returning to base.");
+                break;
+        }
+    }
+
+    public void transitionState() {
+        switch(currentState) {
+            case IDLE:
+                currentState = DroneState.ON_ROUTE;
+                break;
+            case ON_ROUTE:
+                currentState = DroneState.DROPPING_AGENT;
+                break;
+            case DROPPING_AGENT:
+                currentState = DroneState.RETURNING;
+                break;
+            case RETURNING:
+                currentState = DroneState.IDLE;
+                break;
+        }
+    }
+
     /**
      * Simulates the drone's takeoff to a cruising altitude of 20 meters.
      * The process takes 10 seconds.
      */
     private void takeoff() {
+        transitionState();
+        displayState();
         System.out.println(Thread.currentThread().getName() + " taking off to 20m altitude...");
         sleep((long) (5000 * takeoffSpeed));
         System.out.println(Thread.currentThread().getName() + " reached cruising altitude.");
@@ -112,6 +157,9 @@ public class DroneSubsystem implements Runnable {
         sleep(1000); // Takes 1 second to open the nozzle
         batteryLife -= 1;
 
+        transitionState();
+        displayState();
+
         int timeToDrop = amount / nozzleFlowRate; // Time in seconds to drop water
         System.out.println(Thread.currentThread().getName() + " dropping " + amount + "L of firefighting agent at " + nozzleFlowRate + "L/s.");
         sleep(timeToDrop * 1000);  // Time to drop all water
@@ -132,7 +180,8 @@ public class DroneSubsystem implements Runnable {
      * The time to base is calculated during travel, and landing takes 10 seconds.
      */
     private void returnToBase(FireEvent event) {
-        
+        transitionState();
+        displayState();
         System.out.println("\n" +Thread.currentThread().getName() + " returning to base...\n");
         sleep((long) ((scheduler.calculateDistanceToHomeBase(event)/18) * 1000));  // Use stored travel time //0,0 to zone 1, zone1 to zone2
         System.out.println();
@@ -180,6 +229,7 @@ public class DroneSubsystem implements Runnable {
                 System.out.println(Thread.currentThread().getName() + " responding to event: " + event);
 
                 while (event != null) {
+                    displayState();
                     if (currentX == 0 && currentY == 0) {
                         takeoff();
                     }
