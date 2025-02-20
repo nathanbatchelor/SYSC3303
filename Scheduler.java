@@ -219,7 +219,12 @@ public class Scheduler implements Runnable {
         return travelTimeToFire;
     }
 
-
+    /**
+     * Calculates the Euclidean distance from the home base to the center of the fire zone.
+     *
+     * @param event The FireEvent containing the zone details where the fire is located.
+     * @return The distance in meters from the home base to the center of the fire zone.
+     */
     public double calculateDistanceToHomeBase(FireEvent event) {
         // Home base coordinates
         int homeBaseX = 0;
@@ -247,7 +252,13 @@ public class Scheduler implements Runnable {
         return distanceToHomeBase;
     }
 
-
+    /**
+     * Retrieves the next FireEvent from the queue for processing.
+     * If the queue is empty, the method waits until a new event is added.
+     * If no more fire events are expected (isFinished is true), it notifies all waiting threads and returns null.
+     *
+     * @return The next FireEvent to be processed, or null if no more events remain.
+     */
     public synchronized FireEvent getNextFireEvent() {
         while (queue.isEmpty()) {
             if (isFinished) {
