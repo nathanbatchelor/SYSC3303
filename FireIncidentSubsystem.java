@@ -11,7 +11,7 @@ import java.io.IOException;
  *
  * @author Anique
  * @author Jasjot
- * @version 1.0 (Iteration 1), 29th January 2025
+ * @version 1.0
  */
 public class FireIncidentSubsystem implements Runnable {
 

@@ -18,6 +18,10 @@ import java.util.Queue;
  * @author Joey Andrwes
  * @author Grant Phillips
  * @version 1.0
+ *
+ * @author Joey Andrews
+ * @author Grant Phillips
+ * @version 2.0
  */
 public class Scheduler implements Runnable {
 
@@ -269,21 +273,6 @@ public class Scheduler implements Runnable {
      * @return The next FireEvent in the queue, or null if processing is complete.
      */
     public synchronized FireEvent getAdditionalFireEvent(double batteryLife,int x,int y) {
-//        while (queue.isEmpty()) {
-//            if (isFinished) {
-//                System.out.println("Scheduler: No more fire events. Notifying all waiting drones to stop.");
-//                notifyAll();  // Notify all waiting threads (drones) to exit
-//                return null;
-//            }
-//            try {
-//                System.out.println("Scheduler: Waiting for fire events to be added...");
-//                wait();
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//            }
-//
-//        }
-
         // Process the queue to find a suitable fire event
         for (FireEvent currentEvent : queue) {
             double range = calculateTravelTime(x, y, currentEvent);
@@ -301,7 +290,14 @@ public class Scheduler implements Runnable {
     }
 
 
-    // Method to update fire status
+    /**
+     * Updates the status of a fire event after water has been dropped.
+     * If the fire still requires more water, it is re-added to the front of the queue.
+     * If the fire is extinguished, it marks the event as completed.
+     *
+     * @param event The FireEvent being updated.
+     * @param waterDropped The amount of water (in liters) dropped on the fire.
+     */
     public synchronized void updateFireStatus(FireEvent event, int waterDropped) {
         event.removeLitres(waterDropped);
         int remainingLiters = event.getLitres();
@@ -379,17 +375,6 @@ public class Scheduler implements Runnable {
      * The main run method for the Scheduler thread.
      * Waits in a loop until the system is marked as finished.
      */
-//    @Override
-//    public synchronized void run() {
-//        while (!isFinished) {
-//            try {
-//                wait();
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//    }
-
     @Override
     public synchronized void run() {
         while (!isFinished) {
@@ -400,10 +385,4 @@ public class Scheduler implements Runnable {
             }
         }
     }
-
 }
-
-// Drone puts out fire
-// Case: Still has agent and battery: Get current coordinates, calculate distance to next fire, go to fire, return to base.
-// Need to check if the drone has enough battery to go to the next fire and get home without dying.
-// Else: go to base
