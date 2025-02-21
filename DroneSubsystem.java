@@ -176,10 +176,20 @@ public class DroneSubsystem implements Runnable {
         System.out.println("----------------------------------------\n");
         currentX = 0;
         currentY = 0;
-        currentState = DroneState.IDLE;
-        displayState();
     }
 
+    /**
+     * Helper function change the drone state to idle so it can refuel and recharge.
+     *
+     * @param lastEvent is the last event of the drone.
+     */
+    private void makeDroneIdleAndRecharge(FireEvent lastEvent) {
+        returnToBase(lastEvent); // Ensure the drone returns to base when out of firefighting agent
+        currentState = DroneState.IDLE;
+        displayState();
+        remainingAgent = capacity; // Refuel agent
+        batteryLife = 1800; // Recharge battery
+    }
 
     /**
      * Helper method to pause the execution of a thread for a specified amount of time.
@@ -230,9 +240,7 @@ public class DroneSubsystem implements Runnable {
 
                     if (remainingAgent <= 0) {
                         System.out.println(Thread.currentThread().getName() + " has run out of agent. Returning to base.");
-                        returnToBase(lastEvent); // Ensure the drone returns to base when out of firefighting agent
-                        remainingAgent = capacity; // Refuel agent
-                        batteryLife = 1800; // Recharge battery
+                        makeDroneIdleAndRecharge(lastEvent)
                         break; // Exit the loop and check for the next fire event
                     }
 
@@ -241,16 +249,12 @@ public class DroneSubsystem implements Runnable {
                         synchronized (scheduler) {
                             event = scheduler.getAdditionalFireEvent(batteryLife, currentX, currentY);
                             if (event == null) {
-                                returnToBase(lastEvent);
-                                remainingAgent = capacity; // Refuel agent
-                                batteryLife = 1800; // Recharge battery
+                                makeDroneIdleAndRecharge(lastEvent)
                                 break;
                             }
                         }
                     } else {
-                        returnToBase(lastEvent);
-                        remainingAgent = capacity; // Refuel agent
-                        batteryLife = 1800; // Recharge battery
+                        makeDroneIdleAndRecharge(lastEvent)
                         break;
                     }
                 }
