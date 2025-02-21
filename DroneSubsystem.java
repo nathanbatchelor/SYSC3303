@@ -240,7 +240,7 @@ public class DroneSubsystem implements Runnable {
 
                     if (remainingAgent <= 0) {
                         System.out.println(Thread.currentThread().getName() + " has run out of agent. Returning to base.");
-                        makeDroneIdleAndRecharge(lastEvent)
+                        makeDroneIdleAndRecharge(lastEvent);
                         break; // Exit the loop and check for the next fire event
                     }
 
@@ -249,12 +249,12 @@ public class DroneSubsystem implements Runnable {
                         synchronized (scheduler) {
                             event = scheduler.getAdditionalFireEvent(batteryLife, currentX, currentY);
                             if (event == null) {
-                                makeDroneIdleAndRecharge(lastEvent)
+                                makeDroneIdleAndRecharge(lastEvent);
                                 break;
                             }
                         }
                     } else {
-                        makeDroneIdleAndRecharge(lastEvent)
+                        makeDroneIdleAndRecharge(lastEvent);
                         break;
                     }
                 }
