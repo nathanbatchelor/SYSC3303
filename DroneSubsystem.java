@@ -25,6 +25,8 @@ public class DroneSubsystem implements Runnable {
     private int currentY = 0; // Drones current Y position
     private DroneState currentState;
 
+
+
     public enum DroneState {
         IDLE,
         ON_ROUTE,
@@ -65,6 +67,10 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
+    public DroneState getState(){
+        return currentState;
+    }
+
     /**
      * Simulates the drone's takeoff to a cruising altitude of 20 meters.
      * The process takes 10 seconds.
@@ -96,7 +102,7 @@ public class DroneSubsystem implements Runnable {
      *
      * @param event the FireEvent object containing details about the fire zone.
      */
-    private double travelToZoneCenter(double travelTime, FireEvent event) {
+    public double travelToZoneCenter(double travelTime, FireEvent event) {
 
         // Extract zone coordinates from the FireEvent
         String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
@@ -133,7 +139,7 @@ public class DroneSubsystem implements Runnable {
      *
      * @param amount the amount of water to drop in liters.
      */
-    private void extinguishFire(int amount) {
+    public void extinguishFire(int amount) {
         System.out.println("\n" + Thread.currentThread().getName() + " opening nozzle...");
         sleep(1000); // Takes 1 second to open the nozzle
         batteryLife -= 1;
@@ -160,7 +166,7 @@ public class DroneSubsystem implements Runnable {
      * Simulates the drone's return to base and its landing process.
      * The time to base is calculated during travel, and landing takes 10 seconds.
      */
-    private void returnToBase(FireEvent event) {
+    public void returnToBase(FireEvent event) {
         currentState = DroneState.RETURNING;
         displayState();
         System.out.println("\n" +Thread.currentThread().getName() + " returning to base...\n");
