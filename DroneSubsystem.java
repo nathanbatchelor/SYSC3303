@@ -65,6 +65,11 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
+
+    public DroneState getState(){
+        return currentState;
+    }
+
     /**
      * Simulates the drone's takeoff to a cruising altitude of 20 meters.
      * The process takes 10 seconds.
@@ -96,7 +101,7 @@ public class DroneSubsystem implements Runnable {
      *
      * @param event the FireEvent object containing details about the fire zone.
      */
-    private double travelToZoneCenter(double travelTime, FireEvent event) {
+    public double travelToZoneCenter(double travelTime, FireEvent event) {
 
         // Extract zone coordinates from the FireEvent
         String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
@@ -133,7 +138,7 @@ public class DroneSubsystem implements Runnable {
      *
      * @param amount the amount of water to drop in liters.
      */
-    private void extinguishFire(int amount) {
+    public void extinguishFire(int amount) {
         System.out.println("\n" + Thread.currentThread().getName() + " opening nozzle...");
         sleep(1000); // Takes 1 second to open the nozzle
         batteryLife -= 1;
@@ -160,7 +165,7 @@ public class DroneSubsystem implements Runnable {
      * Simulates the drone's return to base and its landing process.
      * The time to base is calculated during travel, and landing takes 10 seconds.
      */
-    private void returnToBase(FireEvent event) {
+    public void returnToBase(FireEvent event) {
         currentState = DroneState.RETURNING;
         displayState();
         System.out.println("\n" +Thread.currentThread().getName() + " returning to base...\n");
@@ -172,6 +177,20 @@ public class DroneSubsystem implements Runnable {
         currentY = 0;
         currentState = DroneState.IDLE;
         displayState();
+    }
+
+
+    /**
+     * Helper function change the drone state to idle so it can refuel and recharge.
+     *
+     * @param lastEvent is the last event of the drone.
+     */
+    private void makeDroneIdleAndRecharge(FireEvent lastEvent) {
+        returnToBase(lastEvent); // Ensure the drone returns to base when out of firefighting agent
+        currentState = DroneState.IDLE;
+        displayState();
+        remainingAgent = capacity; // Refuel agent
+        batteryLife = 1800; // Recharge battery
     }
 
 
@@ -224,9 +243,7 @@ public class DroneSubsystem implements Runnable {
 
                     if (remainingAgent <= 0) {
                         System.out.println(Thread.currentThread().getName() + " has run out of agent. Returning to base.");
-                        returnToBase(lastEvent); // Ensure the drone returns to base when out of firefighting agent
-                        remainingAgent = capacity; // Refuel agent
-                        batteryLife = 1800; // Recharge battery
+                        makeDroneIdleAndRecharge(lastEvent);
                         break; // Exit the loop and check for the next fire event
                     }
 
@@ -235,16 +252,12 @@ public class DroneSubsystem implements Runnable {
                         synchronized (scheduler) {
                             event = scheduler.getAdditionalFireEvent(batteryLife, currentX, currentY);
                             if (event == null) {
-                                returnToBase(lastEvent);
-                                remainingAgent = capacity; // Refuel agent
-                                batteryLife = 1800; // Recharge battery
+                                makeDroneIdleAndRecharge(lastEvent);
                                 break;
                             }
                         }
                     } else {
-                        returnToBase(lastEvent);
-                        remainingAgent = capacity; // Refuel agent
-                        batteryLife = 1800; // Recharge battery
+                        makeDroneIdleAndRecharge(lastEvent);
                         break;
                     }
                 }
