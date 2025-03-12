@@ -95,6 +95,43 @@ public class DroneSubsystem implements Runnable {
         return Math.sqrt(Math.pow(currentX, 2) + Math.pow(currentY, 2));
     }
 
+    private FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
+        // Compute the target zone center from the event.
+        String[] zoneCoords = targetEvent.getZoneDetails().replaceAll("[()]", "").split(" to ");
+        String[] startCoords = zoneCoords[0].split(",");
+        String[] endCoords = zoneCoords[1].split(",");
+        int destX = (Integer.parseInt(startCoords[0].trim()) + Integer.parseInt(endCoords[0].trim())) / 2;
+        int destY = (Integer.parseInt(startCoords[1].trim()) + Integer.parseInt(endCoords[1].trim())) / 2;
+
+        int startX = currentX;
+        int startY = currentY;
+        // We'll divide the travel into one-second increments.
+        int steps = (int) Math.ceil(fullTravelTime);
+        for (int i = 1; i <= steps; i++) {
+            double fraction = (double) i / steps;
+            // Update position along the straight line from (startX, startY) to (destX, destY).
+            currentX = startX + (int) ((destX - startX) * fraction);
+            currentY = startY + (int) ((destY - startY) * fraction);
+            sleep(1000);  // simulate one second of travel
+            batteryLife -= 1; // decrement battery by 1 second
+
+            // At each step, check if there is an on-route event.
+            // The scheduler returns an event if one is within a predefined threshold.
+            FireEvent newEvent = scheduler.getNextAssignedEvent(Thread.currentThread().getName(), currentX, currentY);
+            // If a new event is found and it is different from the one we’re already targeting...
+            if (newEvent != null && newEvent != targetEvent) {
+                System.out.println(Thread.currentThread().getName() + " found on-route event at zone " + newEvent.getZoneId() +
+                        " while en route to zone " + targetEvent.getZoneId() + ". Switching assignment.");
+                // Re-add the original event back to the queue.
+                scheduler.addFireEvent(targetEvent);
+                return newEvent;
+            }
+        }
+        // Completed travel to target zone center.
+        currentX = destX;
+        currentY = destY;
+        return targetEvent;
+    }
 
     /**
      * Simulates the drone traveling to the center of the fire zone.
@@ -177,7 +214,7 @@ public class DroneSubsystem implements Runnable {
         //int remainingAgent = capacity - amount;
         remainingAgent -= amount;
 
-        System.out.println("Dispensed " + amount + "L. Remaining capacity: " + remainingAgent + "L.");
+        System.out.println( Thread.currentThread().getName() + " Dispensed " + amount + "L. Remaining capacity: " + remainingAgent + "L.");
         System.out.println("\n" + Thread.currentThread().getName() + " closing nozzle...");
         sleep(1000); // Takes 1 second to close the nozzle
         batteryLife -= 1;

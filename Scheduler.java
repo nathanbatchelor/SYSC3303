@@ -23,6 +23,21 @@ import java.util.Queue;
  * @author Grant Phillips
  * @version 2.0
  */
+
+// When giving an Event to a drone, figure out what zones it goes through
+// When drone gets to each zone, have it check if there is a fire that meets criteria there
+// If so drone swaps its event with the one at current zone, and places its old event at the front of queue
+//
+
+
+// Edit getNextFireEvent method to check if the drone is within a threshold and check severity
+    // But we need to get that event back and go to the original event if anything happened.
+    //
+//
+
+
+
+
 public class Scheduler implements Runnable {
 
     private final Queue<FireEvent> queue = new LinkedList<>();
@@ -34,6 +49,13 @@ public class Scheduler implements Runnable {
     private boolean droneStarted = false;
     private SchedulerState state = SchedulerState.WAITING_FOR_EVENTS; // Default State
 
+
+    public static class DroneStatus {
+        public String droneId;
+        public int x;
+        public int y;
+        public double batteryLife;
+    }
 
     public enum SchedulerState {
         WAITING_FOR_EVENTS,
@@ -252,6 +274,38 @@ public class Scheduler implements Runnable {
         return distanceToHomeBase;
     }
 
+
+    /**
+     * This method is called by a drone when it is ready for a new event.
+     * It first checks the event queue to see if any event’s zone center is close enough
+     * (i.e. "on route") to the drone’s current position. If so, that event is returned.
+     * Otherwise, the first event in the queue is returned.
+     */
+    public synchronized FireEvent getNextAssignedEvent(String droneId, int currentX, int currentY) {
+        double threshold = 50.0; // Threshold distance in meters for "on route" events.
+        for (FireEvent event : queue) {
+            int[] center = calculateZoneCenter(event);
+            double distance = Math.sqrt(Math.pow(center[0] - currentX, 2) + Math.pow(center[1] - currentY, 2));
+            if (distance <= threshold) {
+                queue.remove(event);
+                return event;
+            }
+        }
+        if (!queue.isEmpty()) {
+            return queue.poll();
+        }
+        return null;
+    }
+
+    // Helper: Calculate the center coordinates of the fire zone.
+    private int[] calculateZoneCenter(FireEvent event) {
+        String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
+        String[] startCoords = zoneCoords[0].split(",");
+        String[] endCoords = zoneCoords[1].split(",");
+        int centerX = (Integer.parseInt(startCoords[0].trim()) + Integer.parseInt(endCoords[0].trim())) / 2;
+        int centerY = (Integer.parseInt(startCoords[1].trim()) + Integer.parseInt(endCoords[1].trim())) / 2;
+        return new int[]{centerX, centerY};
+    }
     /**
      * Retrieves the next FireEvent from the queue for processing.
      * If the queue is empty, the method waits until a new event is added.
@@ -336,10 +390,6 @@ public class Scheduler implements Runnable {
 
         if (queue.isEmpty()) {
             System.out.println("Scheduler: All fires events have been marked as extinguished. Shutting down.");
-//            try {
-//                Thread.sleep(10000);
-//            } catch (Exception e) {
-//                Thread.currentThread().interrupt();
             state = SchedulerState.SHUTTING_DOWN;
             isFinished = true;
             notifyAll();
