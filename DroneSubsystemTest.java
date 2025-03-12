@@ -40,6 +40,6 @@ public class DroneSubsystemTest {
     public void testReturningState(){
         FireEvent ev = new FireEvent("12:00", 1, "FIRE_DETECTED", "HIGH", fireIncidentSubsystem);
         drone.returnToBase(ev);
-        assertEquals(DroneSubsystem.DroneState.IDLE, drone.getState(), "Drone should be IDLE when it gets back to base.");
+        assertEquals(DroneSubsystem.DroneState.RETURNING, drone.getState(), "Drone should be RETURNING when its going back to base.");
     }
 }

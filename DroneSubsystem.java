@@ -101,37 +101,60 @@ public class DroneSubsystem implements Runnable {
      *
      * @param event the FireEvent object containing details about the fire zone.
      */
-    public double travelToZoneCenter(double travelTime, FireEvent event) {
+//    public double travelToZoneCenter(double travelTime, FireEvent event) {
+//
+//        // Extract zone coordinates from the FireEvent
+//        String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
+//        String[] startCoords = zoneCoords[0].split(",");
+//        String[] endCoords = zoneCoords[1].split(",");
+//
+//        // Parse the coordinates
+//        int x1 = Integer.parseInt(startCoords[0].trim());
+//        int y1 = Integer.parseInt(startCoords[1].trim());
+//        int x2 = Integer.parseInt(endCoords[0].trim());
+//        int y2 = Integer.parseInt(endCoords[1].trim());
+//
+//        // Calculate the center of the fire zone
+//        int centerX = (x1 + x2) / 2;
+//        int centerY = (y1 + y2) / 2;
+//
+//        currentState = DroneState.ON_ROUTE;
+//        displayState();
+//
+//        System.out.println(Thread.currentThread().getName() + ": traveling to Zone: " + event.getZoneId() + " with fire at (" + centerX + "," + centerY + ")...");
+//        sleep((long) (travelTime * 1000)); // Drone flying
+//
+//
+//        int steps = 10;
+//        double stepTime = travelTime / 10;
+//        double stepX = (centerX - currentX) / (double) steps; // X increment per step
+//        double stepY = (centerY - currentY) / (double) steps; // Y increment per step
+//
+//        for (int i = 0; i < steps; i++) {
+//            currentX += stepX;
+//            currentY += stepY;
+//            // Notify the scheduler about drone's new position
+//            //scheduler.updateDronePosition(this, currentX, currentY); // need to make this still
+//            // Simulate flight with small sleep duration
+//            sleep((long) (stepTime * 1000));
+//        }
+//
+//
+//        batteryLife -= travelTime;
+//        System.out.println("Battery Life is now: " + batteryLife);
+//        System.out.println(Thread.currentThread().getName() + ": arrived at fire center at Zone: " + event.getZoneId());
+//
+//        currentX = centerX;
+//        currentY = centerY;
+//
+//        //scheduler.updateDronePosition(this, currentX, currentY); // need to make this still
+//
+//        return travelTime;
+//    }
 
-        // Extract zone coordinates from the FireEvent
-        String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
-        String[] startCoords = zoneCoords[0].split(",");
-        String[] endCoords = zoneCoords[1].split(",");
 
-        // Parse the coordinates
-        int x1 = Integer.parseInt(startCoords[0].trim());
-        int y1 = Integer.parseInt(startCoords[1].trim());
-        int x2 = Integer.parseInt(endCoords[0].trim());
-        int y2 = Integer.parseInt(endCoords[1].trim());
 
-        // Calculate the center of the fire zone
-        int centerX = (x1 + x2) / 2;
-        int centerY = (y1 + y2) / 2;
 
-        currentState = DroneState.ON_ROUTE;
-        displayState();
-
-        System.out.println(Thread.currentThread().getName() + ": traveling to Zone: " + event.getZoneId() + " with fire at (" + centerX + "," + centerY + ")...");
-        sleep((long) (travelTime * 1000));
-        batteryLife -= travelTime;
-        System.out.println("Battery Life is now: " + batteryLife);
-        System.out.println(Thread.currentThread().getName() + ": arrived at fire center at Zone: " + event.getZoneId());
-
-        currentX = centerX;
-        currentY = centerY;
-
-        return travelTime;
-    }
 
     /**
      * Simulates the process of extinguishing a fire by dropping water.
@@ -234,7 +257,8 @@ public class DroneSubsystem implements Runnable {
                         takeoff();
                     }
                     double travelTime = scheduler.calculateTravelTime(currentX, currentY, event);
-                    travelToZoneCenter(travelTime, event);
+
+                    event = travelToZoneCenter(travelTime, event);
 
                     int waterToDrop = Math.min(event.getLitres(), remainingAgent);
                     extinguishFire(waterToDrop);
@@ -266,4 +290,5 @@ public class DroneSubsystem implements Runnable {
             e.printStackTrace();
         }
     }
+
 }
