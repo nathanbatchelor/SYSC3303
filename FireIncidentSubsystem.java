@@ -1,6 +1,8 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The FireIncidentSubsystem class is responsible for reading an input file, creating FireEvent instances,
@@ -19,6 +21,7 @@ public class FireIncidentSubsystem implements Runnable {
     private final String eventFile;
     private final int zoneId;
     private final int x1, y1, x2, y2;
+
 
     /**
      * Constructs a FireIncidentSubsystem to process fire events for a specific zone.
@@ -48,7 +51,7 @@ public class FireIncidentSubsystem implements Runnable {
      */
     @Override
     public synchronized void run() {
-        boolean eventsAdded = false;
+        List<FireEvent> events = new ArrayList<>();
         System.out.println(Thread.currentThread().getName() + " running for Zone " + zoneId);
 
         try (BufferedReader reader = new BufferedReader(new FileReader(eventFile))) {
@@ -63,20 +66,25 @@ public class FireIncidentSubsystem implements Runnable {
                 FireEvent fireEvent = parseEvent(line);
                 // Only process events for this zone
                 if (fireEvent.getZoneId() == zoneId) {
-                    System.out.println("FireIncidentSubsystem-Zone " + zoneId + " → New Fire Event: " + fireEvent);
-                    scheduler.addFireEvent(fireEvent);
-                    eventsAdded = true;
-//                    System.out.println("Setting events to loaded");
-//                    System.out.println("----------------------------------------\n");
-                    scheduler.setEventsLoaded();
+                    events.add(fireEvent);
                 }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        // Only call if atleast one event was added
-        if (eventsAdded) {
+
+        // Sort events by the time provided in the event file.
+        // The time format is assumed to be "HH:mm:ss"
+        events.sort((e1, e2) -> java.time.LocalTime.parse(e1.getTime()).compareTo(java.time.LocalTime.parse(e2.getTime())));
+
+        // Add the sorted events to the scheduler.
+        for (FireEvent event : events) {
+            System.out.println("FireIncidentSubsystem-Zone " + zoneId + " → New Fire Event: " + event);
+            scheduler.addFireEvent(event);
             scheduler.setEventsLoaded();
+        }
+
+        if (!events.isEmpty()) {
             System.out.println("Setting events to loaded");
             System.out.println("----------------------------------------\n");
         }

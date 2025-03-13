@@ -2,10 +2,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 
 /**
  * The Scheduler class acts as a centralized system for handling fire events.
@@ -40,7 +37,11 @@ import java.util.Queue;
 
 public class Scheduler implements Runnable {
 
-    private final Queue<FireEvent> queue = new LinkedList<>();
+    private final Queue<FireEvent> queue = new PriorityQueue<>(
+            (e1, e2) -> java.time.LocalTime.parse(e1.getTime())
+                    .compareTo(java.time.LocalTime.parse(e2.getTime()))
+    );
+
     private final Map<Integer, FireIncidentSubsystem> zones = new HashMap<>();
     private final String zoneFile;
     private final String eventFile;
@@ -167,6 +168,16 @@ public class Scheduler implements Runnable {
         }
     }
 
+    public synchronized void printQueue() {
+        System.out.println("=== Final Scheduler Queue (Sorted by Time) ===");
+        // Create a copy of the queue to print the events in order.
+        PriorityQueue<FireEvent> copy = new PriorityQueue<>(queue);
+        while (!copy.isEmpty()) {
+            System.out.println(copy.poll());
+        }
+    }
+
+
     public synchronized void waitForEvents() {
         while (!isLoaded) {
             try {
@@ -282,7 +293,7 @@ public class Scheduler implements Runnable {
      * Otherwise, the first event in the queue is returned.
      */
     public synchronized FireEvent getNextAssignedEvent(String droneId, int currentX, int currentY) {
-        double threshold = 50.0; // Threshold distance in meters for "on route" events.
+        double threshold = 20.0; // Threshold distance in meters for "on route" events.
         for (FireEvent event : queue) {
             int[] center = calculateZoneCenter(event);
             double distance = Math.sqrt(Math.pow(center[0] - currentX, 2) + Math.pow(center[1] - currentY, 2));
@@ -370,7 +381,7 @@ public class Scheduler implements Runnable {
         if (remainingLiters > 0 && waterDropped > 0) {
             // Only re-add the event to the queue if it still needs to be extinguished
             System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " still needs " + remainingLiters + "L.");
-            ((LinkedList<FireEvent>) queue).addFirst(event);
+            queue.add(event);
             notifyAll();
         } else {
             markFireExtinguished(event);
