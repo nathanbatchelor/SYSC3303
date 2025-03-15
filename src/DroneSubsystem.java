@@ -1,3 +1,8 @@
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
+import java.io.IOException;
+import java.net.*;
+
 /**
  * The DroneSubsystem class implements a subsystem that simulates a firefighting drone responding to fire events.
  * It calculates water needed, performs operations like takeoff, travel, extinguish fire, and returns to base.
@@ -24,12 +29,59 @@ public class DroneSubsystem implements Runnable {
     private int currentX = 0; // Drones current X position
     private int currentY = 0; // Drones current Y position
     private DroneState currentState;
+    private DatagramSocket socket;
+    private InetAddress schedulerAddress;
+
 
     public enum DroneState {
         IDLE,
         ON_ROUTE,
         DROPPING_AGENT,
         RETURNING
+    }
+
+    public Object sendRequest(String methodName, Object... parameters) {
+        try {
+            //build string
+            StringBuilder requestBuilder = new StringBuilder("invokeMethod(" + methodName + "(");
+
+            for (int i = 0; i < parameters.length; i++) {
+                if (i > 0) requestBuilder.append(", ");
+
+                Object parameter = parameters[i];
+
+                if (parameter instanceof String) {
+                    requestBuilder.append("\"" + parameter + "\"");
+                }
+                else {
+                    requestBuilder.append(parameter.toString());
+                }
+            }
+
+            requestBuilder.append("))");
+            String request = requestBuilder.toString();
+
+            //send request to invoke method
+            byte[] requestData = request.getBytes();
+            DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, schedulerAddress, 6000);
+            socket.send(requestPacket);
+
+            //recieve response in string format
+            byte[] responseBuffer = new byte[100];
+            DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
+            socket.receive(responsePacket);
+
+            //return response
+            ObjectInputStream inputStream = new ObjectInputStream(new ByteArrayInputStream(responsePacket.getData(), 0, responsePacket.getLength()));
+            Object response = inputStream.readObject();
+            return response;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "ERROR: IOException.";
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return "ERROR: Class not found.";
+        }
     }
 
 
@@ -39,7 +91,16 @@ public class DroneSubsystem implements Runnable {
      * @param scheduler the Scheduler object responsible for handling fire events.
      */
     public DroneSubsystem(Scheduler scheduler) {
-
+        try {
+            socket = new DatagramSocket();
+            schedulerAddress = InetAddress.getLocalHost();
+            System.out.println("DroneSubsystem is listening on random port.");
+        } catch (SocketException se) {
+            se.printStackTrace();
+            System.exit(1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         this.scheduler = scheduler;
         this.remainingAgent = capacity;
         this.currentState = DroneState.IDLE;
@@ -117,7 +178,7 @@ public class DroneSubsystem implements Runnable {
 
             // At each step, check if there is an on-route event.
             // The scheduler returns an event if one is within a predefined threshold.
-            FireEvent newEvent = scheduler.getNextAssignedEvent(Thread.currentThread().getName(), currentX, currentY);
+            FireEvent newEvent = (FireEvent) sendRequest("getNextAssignedEvent", Thread.currentThread().getName(), currentX, currentY);
             // If a new event is found and it is different from the one we’re already targeting...
             if (newEvent != null && newEvent != targetEvent) {
                 System.out.println(Thread.currentThread().getName() + " found on-route event at zone " + newEvent.getZoneId() +
@@ -280,7 +341,7 @@ public class DroneSubsystem implements Runnable {
                 FireEvent event;
 
                 synchronized (scheduler) {
-                    event = scheduler.getNextFireEvent();
+                    event = (FireEvent) sendRequest("getNextFireEvent");
                     if (event == null) {
                         System.out.println("No event found.");
                         break;
@@ -311,7 +372,7 @@ public class DroneSubsystem implements Runnable {
                     // Check for leftover agent and battery life
                     if (remainingAgent > 0 && batteryLife > 0) {
                         synchronized (scheduler) {
-                            event = scheduler.getAdditionalFireEvent(batteryLife, currentX, currentY);
+                            event = (FireEvent) sendRequest("getAdditionalFireEvent", batteryLife, currentX, currentY);
                             if (event == null) {
                                 makeDroneIdleAndRecharge(lastEvent);
                                 break;
