@@ -1,7 +1,8 @@
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * The DroneSubsystem class implements a subsystem that simulates a firefighting drone responding to fire events.
@@ -42,27 +43,19 @@ public class DroneSubsystem implements Runnable {
 
     public Object sendRequest(String methodName, Object... parameters) {
         try {
-            //build string
-            StringBuilder requestBuilder = new StringBuilder("invokeMethod(" + methodName + "(");
+            //store method name and parameters in list
+            List<Object> methodAndParameters = new ArrayList<>();
+            methodAndParameters.add(methodName);
+            methodAndParameters.addAll(Arrays.asList(parameters));
 
-            for (int i = 0; i < parameters.length; i++) {
-                if (i > 0) requestBuilder.append(", ");
-
-                Object parameter = parameters[i];
-
-                if (parameter instanceof String) {
-                    requestBuilder.append("\"" + parameter + "\"");
-                }
-                else {
-                    requestBuilder.append(parameter.toString());
-                }
-            }
-
-            requestBuilder.append("))");
-            String request = requestBuilder.toString();
+            //create data to send
+            ByteArrayOutputStream request = new ByteArrayOutputStream();
+            ObjectOutputStream outputStream = new ObjectOutputStream(request);
+            outputStream.writeObject(methodAndParameters);
+            outputStream.flush();
 
             //send request to invoke method
-            byte[] requestData = request.getBytes();
+            byte[] requestData = request.toByteArray();
             DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, schedulerAddress, 6000);
             socket.send(requestPacket);
 
@@ -184,7 +177,7 @@ public class DroneSubsystem implements Runnable {
                 System.out.println(Thread.currentThread().getName() + " found on-route event at zone " + newEvent.getZoneId() +
                         " while en route to zone " + targetEvent.getZoneId() + ". Switching assignment.");
                 // Re-add the original event back to the queue.
-                scheduler.addFireEvent(targetEvent);
+                sendRequest("addFireEvent", targetEvent);
                 return newEvent;
             }
         }
@@ -290,7 +283,8 @@ public class DroneSubsystem implements Runnable {
         currentState = DroneState.RETURNING;
         displayState();
         System.out.println("\n" +Thread.currentThread().getName() + " returning to base...\n");
-        sleep((long) ((scheduler.calculateDistanceToHomeBase(event)/18) * 1000));  // Use stored travel time //0,0 to zone 1, zone1 to zone2
+        double distance = (double) sendRequest("calculateDistanceToHomeBase", event);
+        sleep((long) ((distance/18) * 1000));  // Use stored travel time //0,0 to zone 1, zone1 to zone2
         System.out.println();
         descend();
         System.out.println("----------------------------------------\n");
@@ -354,13 +348,14 @@ public class DroneSubsystem implements Runnable {
                     if (currentX == 0 && currentY == 0) {
                         takeoff();
                     }
-                    double travelTime = scheduler.calculateTravelTime(currentX, currentY, event);
+                    double travelTime = (double) sendRequest("calculateTravelTime", currentX, currentY);
+
 
                     event = travelToZoneCenter(travelTime, event);
 
                     int waterToDrop = Math.min(event.getLitres(), remainingAgent);
                     extinguishFire(waterToDrop);
-                    scheduler.updateFireStatus(event, waterToDrop);
+                    sendRequest("updateFireStatus", event, waterToDrop);
                     FireEvent lastEvent = event;
 
                     if (remainingAgent <= 0) {
