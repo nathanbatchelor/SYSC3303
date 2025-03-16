@@ -50,6 +50,7 @@ public class DroneSubsystem implements Runnable {
             List<Object> methodAndParameters = new ArrayList<>();
             methodAndParameters.add(methodName);
             methodAndParameters.addAll(Arrays.asList(parameters));
+            methodAndParameters.add(idNum);
 
             //create data to send
             ByteArrayOutputStream request = new ByteArrayOutputStream();
@@ -60,12 +61,21 @@ public class DroneSubsystem implements Runnable {
             //send request to invoke method
 
             byte[] requestData = request.toByteArray();
-            DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, schedulerAddress, 6001);
+            DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, schedulerAddress, 6500+idNum);
             socket.send(requestPacket);
 
             //recieve response in string format
             byte[] responseBuffer = new byte[100];
             DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
+            socket.receive(responsePacket);
+            String message = new String(responseBuffer, 0, responsePacket.getLength());
+            if(message.contains("ACK")){
+                System.out.println("Drone: message acknowledged by server");
+                if(message.contains("done")){
+                    return "";
+                }
+            }
+
             socket.receive(responsePacket);
 
             //return response
@@ -182,7 +192,7 @@ public class DroneSubsystem implements Runnable {
                 System.out.println(Thread.currentThread().getName() + " found on-route event at zone " + newEvent.getZoneId() +
                         " while en route to zone " + targetEvent.getZoneId() + ". Switching assignment.");
                 // Re-add the original event back to the queue.
-                sendRequest("addFireEvent", targetEvent);
+                sendRequest("ADD_FIRE_EVENT", targetEvent);
                 return newEvent;
             }
         }
@@ -334,18 +344,19 @@ public class DroneSubsystem implements Runnable {
      * of operations to respond to and extinguish the fire.
      */
     @Override
-    public synchronized void run() {
+    public void run() {
+        System.out.println("running drone------------------------------------------------------------------");
         try {
             while (true) {
                 FireEvent event;
 
-                synchronized (scheduler) {
-                    event = (FireEvent) sendRequest("getNextFireEvent");
-                    if (event == null) {
-                        System.out.println("No event found.");
-                        break;
-                    }
+
+                event = (FireEvent) sendRequest("getNextFireEvent");
+                if (event == null) {
+                    System.out.println("No event found.");
+                    break;
                 }
+
                 System.out.println(Thread.currentThread().getName() + " responding to event: " + event);
 
                 while (event != null) {

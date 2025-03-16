@@ -18,7 +18,7 @@ import java.net.*;
 public class FireIncidentSubsystem implements Runnable {
 
     public static final int DEFAULT_FIS_PORT = 5000;
-    public static final int DEFAULT_SCHEDULER_PORT = 6000;
+    public static final int DEFAULT_SCHEDULER_PORT = 6100;
     private static int PORT;
 
     private final int zoneId;
@@ -34,7 +34,7 @@ public class FireIncidentSubsystem implements Runnable {
 
     // Thread for UDP listening
     private Thread udpListenerThread;
-
+    private String eventFile;
     /**
      * Constructs a FireIncidentSubsystem to process fire events for a specific zone.
      * Processes the event file immediately upon construction.
@@ -56,7 +56,7 @@ public class FireIncidentSubsystem implements Runnable {
         this.x2 = x2;
         this.y2 = y2;
         PORT = DEFAULT_FIS_PORT + zoneId; // Use zoneId to make each FIS port uniqu
-
+        this.eventFile=eventFile;
         try{
             this.socket = new DatagramSocket(PORT);
             System.out.println("FireIncidentSubsystem for Zone " + zoneId + " listening on port " + PORT);
@@ -65,7 +65,7 @@ public class FireIncidentSubsystem implements Runnable {
             e.printStackTrace();
         }
 
-        processEventFile(eventFile);
+
     }
 
     /**
@@ -137,6 +137,7 @@ public class FireIncidentSubsystem implements Runnable {
      */
     @Override
     public synchronized void run() {
+        processEventFile(eventFile);
         boolean eventsAdded = false;
         System.out.println(Thread.currentThread().getName() + " running for Zone " + zoneId);
 
@@ -265,7 +266,7 @@ public class FireIncidentSubsystem implements Runnable {
 
             // Send request to target
             byte[] requestData = request.getBytes();
-            DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, hostAddress, hostPort);
+            DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, hostAddress, hostPort+zoneId);
             socket.send(requestPacket);
 
             // Receive acknowledgment

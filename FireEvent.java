@@ -1,8 +1,6 @@
 /**
  * This class represents a fire event with specific details such as time, zone, event type, severity,
  * and the associated subsystem that processes the event.
- *
- * @author Joey Andrews
  */
 public class FireEvent {
     private final String time;
