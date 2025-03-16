@@ -45,50 +45,55 @@ public class DroneSubsystem implements Runnable {
 
     public Object sendRequest(String methodName, Object... parameters) {
         try {
-            System.out.println("drone trying to send " + methodName);
-            //store method name and parameters in list
+            System.out.println(" Drone " + idNum + " sending request: " + methodName);
+
+            // Store method name and parameters in a list
             List<Object> methodAndParameters = new ArrayList<>();
             methodAndParameters.add(methodName);
             methodAndParameters.addAll(Arrays.asList(parameters));
-            methodAndParameters.add(idNum);
+            methodAndParameters.add(idNum);  // Include drone ID for tracking
 
-            //create data to send
+            // Create data to send
             ByteArrayOutputStream request = new ByteArrayOutputStream();
             ObjectOutputStream outputStream = new ObjectOutputStream(request);
             outputStream.writeObject(methodAndParameters);
             outputStream.flush();
-
-            //send request to invoke method
-
             byte[] requestData = request.toByteArray();
-            DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, schedulerAddress, 6500+idNum);
-            socket.send(requestPacket);
 
-            //recieve response in string format
-            byte[] responseBuffer = new byte[100];
-            DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
-            socket.receive(responsePacket);
-            String message = new String(responseBuffer, 0, responsePacket.getLength());
-            if(message.contains("ACK")){
-                System.out.println("Drone: message acknowledged by server");
-                if(message.contains("done")){
-                    return "";
+            // Send request to the Scheduler
+            DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, schedulerAddress, 6500 + idNum);
+            socket.send(requestPacket);
+            System.out.println(" Drone " + idNum + " request sent, waiting for response...");
+
+            // Loop to keep waiting for a valid response
+            while (true) {
+                try {
+                    byte[] responseBuffer = new byte[1024]; // Increase buffer size for large objects
+                    DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
+                    socket.receive(responsePacket); // Blocking call, waits for response
+                    System.out.println("Waiting for the response in the loop");
+                    // Convert response to string
+                    String message = new String(responseBuffer, 0, responsePacket.getLength());
+
+
+                    // Deserialize the actual response
+                    ObjectInputStream inputStream = new ObjectInputStream(new ByteArrayInputStream(responsePacket.getData(), 0, responsePacket.getLength()));
+                    Object response = inputStream.readObject();
+
+                    System.out.println(" Drone " + idNum + " received response: " + response);
+                    return response; // Return the received data
+
+                } catch (SocketTimeoutException e) {
+                    System.out.println(" Drone " + idNum + " waiting for response...");
+                    continue; // Keep retrying
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+                    return "ERROR: Failed to receive response.";
                 }
             }
-
-            socket.receive(responsePacket);
-
-            //return response
-            ObjectInputStream inputStream = new ObjectInputStream(new ByteArrayInputStream(responsePacket.getData(), 0, responsePacket.getLength()));
-            Object response = inputStream.readObject();
-            System.out.println(response + "------------------------------------------------------------------------------------");
-            return response;
         } catch (IOException e) {
             e.printStackTrace();
             return "ERROR: IOException.";
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return "ERROR: Class not found.";
         }
     }
 

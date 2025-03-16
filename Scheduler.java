@@ -344,9 +344,13 @@ public class Scheduler implements Runnable {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-        } // peek for multiple drones?
-        return queue.poll();
+        }
+
+        FireEvent event = queue.poll();
+        System.out.println("Scheduler: Sending fire event to drone: " + event);
+        return event;
     }
+
 
 
     /**
@@ -482,7 +486,7 @@ public class Scheduler implements Runnable {
                             invokeMethod(elements.get(0),elements.subList(1,elements.size()),true);
                         }
                     }catch (Exception e){
-                        System.out.println("timeout in FIS socket");
+                        //System.out.println("timeout in FIS socket");
                     }
                 }
 
@@ -508,7 +512,7 @@ public class Scheduler implements Runnable {
                             invokeMethod(list.get(0),list.subList(1,list.size()),false);
                         }
                     }catch (Exception e){
-                        System.out.println("timeout in drone socket");
+                        //System.out.println("timeout in drone socket");
                     }
                 }
 
@@ -540,7 +544,14 @@ public class Scheduler implements Runnable {
             FireEvent event = new FireEvent(params.get(0) + ":" + params.get(1) + ":" +params.get(2),Integer.parseInt(params.get(3)),params.get(4),params.get(5),zones.get(Integer.parseInt(params.get(3))));
             droneRPCSend(String.valueOf(calculateDistanceToHomeBase(event)),Integer.parseInt(params.get(6)));
         } else if (methodName.equals("getNextFireEvent")) {
-            droneRPCSend(getNextFireEvent().toString(), Integer.valueOf(params.get(0).toString()));
+            System.out.println("Sending drone the event");
+            FireEvent event = getNextFireEvent();
+            System.out.println("Sending drone the event");
+            if (event != null) {
+                droneRPCSend(event, Integer.parseInt(params.get(0))); // Send actual FireEvent object
+            } else {
+                droneRPCSend("NULL", Integer.parseInt(params.get(0))); // Send "NULL" when no events are available
+            }
         } else if (methodName.equals("calculateTravelTime")) {
             FireEvent event = new FireEvent(params.get(2) + ":" + params.get(3) + ":" +params.get(4),Integer.parseInt(params.get(5)),params.get(6),params.get(7),zones.get(Integer.parseInt(params.get(5))));
             droneRPCSend(String.valueOf(calculateTravelTime(Integer.parseInt(params.get(0)),Integer.parseInt(params.get(1)),event)), Integer.parseInt(params.get(8)));
@@ -562,20 +573,23 @@ public class Scheduler implements Runnable {
     }
 
 
-    public synchronized void droneRPCSend(String message,int idnum){
-        System.out.println("entered drone send------------------------------------------------------");
-        byte[] responseData = message.getBytes();
-        System.out.println("sending " + message + " to " + idnum );
-        DatagramPacket responsePacket = null;
+    public synchronized void droneRPCSend(Object response, int idnum) {
         try {
-            responsePacket = new DatagramPacket("ACK".getBytes(), 3, InetAddress.getLocalHost(), DEFAULT_DRONE_PORT+idnum);
-            dronesendSocket.send(responsePacket);
-            responsePacket = new DatagramPacket(responseData, responseData.length, InetAddress.getLocalHost(), DEFAULT_DRONE_PORT+idnum);
+            System.out.println("entered drone send------------------------------------------------------");
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+            ObjectOutputStream objStream = new ObjectOutputStream(byteStream);
+            objStream.writeObject(response);
+            objStream.flush();
+            byte[] responseData = byteStream.toByteArray();
+
+            System.out.println("sending " + response + " to " + idnum);
+            DatagramPacket responsePacket = new DatagramPacket(responseData, responseData.length, InetAddress.getLocalHost(), DEFAULT_DRONE_PORT + idnum);
             dronesendSocket.send(responsePacket);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
+
     public synchronized void FISRPCSend(String message,int zone) {
         byte[] responseData = message.getBytes();
         System.out.println("sending " + message + " to " + zone );
