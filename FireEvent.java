@@ -1,15 +1,20 @@
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
+import java.io.Serializable;
+
 /**
  * This class represents a fire event with specific details such as time, zone, event type, severity,
  * and the associated subsystem that processes the event.
  */
-public class FireEvent {
+public class FireEvent implements Serializable {
     private final String time;
     private final int zoneId;
     private final String eventType;
     private final String severity;
 
     private int litresNeeded;
-    private final FireIncidentSubsystem fireIncidentSubsystem;
+    transient private FireIncidentSubsystem fireIncidentSubsystem;
 
     /**
      * Constructs a FireEvent object.
@@ -20,12 +25,23 @@ public class FireEvent {
      * @param severity              The severity level of the event.
      * @param fireIncidentSubsystem The subsystem associated with the event.
      */
+
+
+
     public FireEvent(String time, int zoneId, String eventType, String severity, FireIncidentSubsystem fireIncidentSubsystem) {
         this.time = time;
         this.zoneId = zoneId;
         this.eventType = eventType;
         this.severity = severity;
         this.fireIncidentSubsystem = fireIncidentSubsystem;
+    }
+
+    @Serial
+    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+        ois.defaultReadObject(); // Deserialize non-transient fields
+
+        // Reinitialize transient field manually (e.g., fetch from a singleton or factory)
+        this.fireIncidentSubsystem = null; // Replace with actual initialization logic
     }
 
     /**

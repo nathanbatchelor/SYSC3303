@@ -509,6 +509,7 @@ public class Scheduler implements Runnable {
                         }
                     }catch (Exception e){
                         System.out.println("timeout in drone socket");
+                        e.printStackTrace(System.out);
                     }
                 }
 
@@ -540,7 +541,8 @@ public class Scheduler implements Runnable {
             FireEvent event = new FireEvent(params.get(0) + ":" + params.get(1) + ":" +params.get(2),Integer.parseInt(params.get(3)),params.get(4),params.get(5),zones.get(Integer.parseInt(params.get(3))));
             droneRPCSend(String.valueOf(calculateDistanceToHomeBase(event)),Integer.parseInt(params.get(6)));
         } else if (methodName.equals("getNextFireEvent")) {
-            droneRPCSend(getNextFireEvent().toString(), Integer.valueOf(params.get(0).toString()));
+            Object response = getNextFireEvent();
+            droneRPCSend(response, Integer.valueOf(params.get(0).toString()));
         } else if (methodName.equals("calculateTravelTime")) {
             FireEvent event = new FireEvent(params.get(2) + ":" + params.get(3) + ":" +params.get(4),Integer.parseInt(params.get(5)),params.get(6),params.get(7),zones.get(Integer.parseInt(params.get(5))));
             droneRPCSend(String.valueOf(calculateTravelTime(Integer.parseInt(params.get(0)),Integer.parseInt(params.get(1)),event)), Integer.parseInt(params.get(8)));
@@ -562,12 +564,28 @@ public class Scheduler implements Runnable {
     }
 
 
-    public synchronized void droneRPCSend(String message,int idnum){
-        System.out.println("entered drone send------------------------------------------------------");
-        byte[] responseData = message.getBytes();
-        System.out.println("sending " + message + " to " + idnum );
-        DatagramPacket responsePacket = null;
+    public synchronized void droneRPCSend(Object message,int idnum){
+
+        List<Object> methodAndParameters = new ArrayList<>();
+        byte[] responseData;
         try {
+            methodAndParameters.addAll(Arrays.asList(message));
+
+            //create data to send
+            ByteArrayOutputStream request = new ByteArrayOutputStream();
+            ObjectOutputStream outputStream = new ObjectOutputStream(request);
+            outputStream.writeObject(methodAndParameters);
+            outputStream.flush();
+            System.out.println("entered drone send------------------------------------------------------");
+            responseData =request.toByteArray();
+            System.out.println("sending " + message + " to " + idnum );
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            DatagramPacket responsePacket = null;
             responsePacket = new DatagramPacket("ACK".getBytes(), 3, InetAddress.getLocalHost(), DEFAULT_DRONE_PORT+idnum);
             dronesendSocket.send(responsePacket);
             responsePacket = new DatagramPacket(responseData, responseData.length, InetAddress.getLocalHost(), DEFAULT_DRONE_PORT+idnum);
