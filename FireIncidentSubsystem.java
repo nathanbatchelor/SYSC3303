@@ -95,7 +95,7 @@ public class FireIncidentSubsystem implements Runnable {
                     // Send the fire event to the scheduler via RPC
                     String response = rpc_send("ADD_FIRE_EVENT:" + fireEvent.getTime() + ":" + fireEvent.getZoneId() + ":" +
                             fireEvent.getEventType() + ":" + fireEvent.getSeverity(), schedulerAddress, schedulerPort);
-                    if (response.startsWith("SUCCESS")) {
+                    if (response.contains("SUCCESS")) {
                         eventsAdded = true;
                     } else {
                         System.err.println("Failed to add fire event: " + response);

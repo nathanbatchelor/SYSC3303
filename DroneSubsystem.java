@@ -81,6 +81,7 @@ public class DroneSubsystem implements Runnable {
             //return response
             ObjectInputStream inputStream = new ObjectInputStream(new ByteArrayInputStream(responsePacket.getData(), 0, responsePacket.getLength()));
             Object response = inputStream.readObject();
+            System.out.println(response + "------------------------------------------------------------------------------------");
             return response;
         } catch (IOException e) {
             e.printStackTrace();
