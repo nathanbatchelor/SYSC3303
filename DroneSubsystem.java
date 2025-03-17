@@ -206,55 +206,42 @@ public class DroneSubsystem implements Runnable {
      *
      * @param event the FireEvent object containing details about the fire zone.
      */
-//    public double travelToZoneCenter(double travelTime, FireEvent event) {
-//
-//        // Extract zone coordinates from the FireEvent
-//        String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
+//    private FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
+//        // Compute the target zone center from the event.
+//        String[] zoneCoords = targetEvent.getZoneDetails().replaceAll("[()]", "").split(" to ");
 //        String[] startCoords = zoneCoords[0].split(",");
 //        String[] endCoords = zoneCoords[1].split(",");
+//        int destX = (Integer.parseInt(startCoords[0].trim()) + Integer.parseInt(endCoords[0].trim())) / 2;
+//        int destY = (Integer.parseInt(startCoords[1].trim()) + Integer.parseInt(endCoords[1].trim())) / 2;
 //
-//        // Parse the coordinates
-//        int x1 = Integer.parseInt(startCoords[0].trim());
-//        int y1 = Integer.parseInt(startCoords[1].trim());
-//        int x2 = Integer.parseInt(endCoords[0].trim());
-//        int y2 = Integer.parseInt(endCoords[1].trim());
+//        int startX = currentX;
+//        int startY = currentY;
+//        // We'll divide the travel into one-second increments.
+//        int steps = (int) Math.ceil(fullTravelTime);
+//        for (int i = 1; i <= steps; i++) {
+//            double fraction = (double) i / steps;
+//            // Update position along the straight line from (startX, startY) to (destX, destY).
+//            currentX = startX + (int) ((destX - startX) * fraction);
+//            currentY = startY + (int) ((destY - startY) * fraction);
+//            sleep(1000);  // simulate one second of travel
+//            batteryLife -= 1; // decrement battery by 1 second
 //
-//        // Calculate the center of the fire zone
-//        int centerX = (x1 + x2) / 2;
-//        int centerY = (y1 + y2) / 2;
-//
-//        currentState = DroneState.ON_ROUTE;
-//        displayState();
-//
-//        System.out.println(Thread.currentThread().getName() + ": traveling to Zone: " + event.getZoneId() + " with fire at (" + centerX + "," + centerY + ")...");
-//        sleep((long) (travelTime * 1000)); // Drone flying
-//
-//
-//        int steps = 10;
-//        double stepTime = travelTime / 10;
-//        double stepX = (centerX - currentX) / (double) steps; // X increment per step
-//        double stepY = (centerY - currentY) / (double) steps; // Y increment per step
-//
-//        for (int i = 0; i < steps; i++) {
-//            currentX += stepX;
-//            currentY += stepY;
-//            // Notify the scheduler about drone's new position
-//            //scheduler.updateDronePosition(this, currentX, currentY); // need to make this still
-//            // Simulate flight with small sleep duration
-//            sleep((long) (stepTime * 1000));
+//            // At each step, check if there is an on-route event.
+//            // The scheduler returns an event if one is within a predefined threshold.
+//            FireEvent newEvent = scheduler.getNextAssignedEvent(Thread.currentThread().getName(), currentX, currentY);
+//            // If a new event is found and it is different from the one we’re already targeting...
+//            if (newEvent != null && newEvent != targetEvent) {
+//                System.out.println(Thread.currentThread().getName() + " found on-route event at zone " + newEvent.getZoneId() +
+//                        " while en route to zone " + targetEvent.getZoneId() + ". Switching assignment.");
+//                // Re-add the original event back to the queue.
+//                scheduler.addFireEvent(targetEvent);
+//                return newEvent;
+//            }
 //        }
-//
-//
-//        batteryLife -= travelTime;
-//        System.out.println("Battery Life is now: " + batteryLife);
-//        System.out.println(Thread.currentThread().getName() + ": arrived at fire center at Zone: " + event.getZoneId());
-//
-//        currentX = centerX;
-//        currentY = centerY;
-//
-//        //scheduler.updateDronePosition(this, currentX, currentY); // need to make this still
-//
-//        return travelTime;
+//        // Completed travel to target zone center.
+//        currentX = destX;
+//        currentY = destY;
+//        return targetEvent;
 //    }
 
 
