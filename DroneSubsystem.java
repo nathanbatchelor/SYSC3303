@@ -393,6 +393,7 @@ public class DroneSubsystem implements Runnable {
                             }
                         }
                     } else {
+                        System.out.println("Returning to base.");
                         makeDroneIdleAndRecharge(lastEvent);
                         break;
                     }
