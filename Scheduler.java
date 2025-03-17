@@ -233,7 +233,7 @@ public class Scheduler implements Runnable {
      */
     public double calculateTravelTime(int xDrone, int yDrone, FireEvent event) {
         int cruiseSpeed = 18;
-
+        System.out.println("Calculating travel time");
         // Extract zone coordinates from the FireEvent
         String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
         String[] startCoords = zoneCoords[0].split(",");
@@ -244,17 +244,13 @@ public class Scheduler implements Runnable {
         int y1 = Integer.parseInt(startCoords[1].trim());
         int x2 = Integer.parseInt(endCoords[0].trim());
         int y2 = Integer.parseInt(endCoords[1].trim());
-
         // Calculate the center of the fire zone
         int centerX = (x1 + x2) / 2;
         int centerY = (y1 + y2) / 2;
-
         // Calculate the distance from the drone's position to the fire zone center
         double distance = Math.sqrt(Math.pow(centerX - xDrone, 2) + Math.pow(centerY - yDrone, 2));
-
         // Calculate travel time based on cruise speed
         double travelTimeToFire = distance / cruiseSpeed;
-
         System.out.println("\nScheduler: Travel time to fire: " + travelTimeToFire);
         return travelTimeToFire;
     }
@@ -401,6 +397,10 @@ public class Scheduler implements Runnable {
         }
     }
 
+    public Map<Integer, FireIncidentSubsystem> getZones() {
+        return zones;
+    }
+
 
 
     /**
@@ -525,6 +525,17 @@ public class Scheduler implements Runnable {
         System.out.println("schedluler left run loop");
     }
 
+    private FireEvent parseFireEvent(String serializedEvent) {
+        try {
+            ByteArrayInputStream byteStream = new ByteArrayInputStream(serializedEvent.getBytes());
+            ObjectInputStream objStream = new ObjectInputStream(byteStream);
+            return (FireEvent) objStream.readObject(); //
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("❌ Error deserializing FireEvent: " + e.getMessage());
+            return null; // Handle failure properly
+        }
+    }
+
     private synchronized String invokeMethod(String methodName,List<String> params,boolean from){
         // Remove the method name from params
         System.out.println(methodName);
@@ -541,26 +552,39 @@ public class Scheduler implements Runnable {
         } else if (methodName.equals("getNextAssignedEvent")) {
             droneRPCSend(getNextAssignedEvent(params.get(0),Integer.parseInt(params.get(1)),Integer.parseInt(params.get(2))).toString(),Integer.parseInt(params.get(0)));
         } else if (methodName.equals("calculateDistanceToHomeBase")) {
-            FireEvent event = new FireEvent(params.get(0) + ":" + params.get(1) + ":" +params.get(2),Integer.parseInt(params.get(3)),params.get(4),params.get(5),zones.get(Integer.parseInt(params.get(3))));
-            droneRPCSend(String.valueOf(calculateDistanceToHomeBase(event)),Integer.parseInt(params.get(6)));
+
+            FireEvent newEvent = new FireEvent(params.get(0), zones);
+            droneRPCSend(calculateDistanceToHomeBase(newEvent),Integer.parseInt(params.get(1)));
         } else if (methodName.equals("getNextFireEvent")) {
             System.out.println("Sending drone the event");
             FireEvent event = getNextFireEvent();
             System.out.println("Sending drone the event");
             if (event != null) {
-                droneRPCSend(event, Integer.parseInt(params.get(0))); // Send actual FireEvent object
+                droneRPCSend(event.toString(), Integer.parseInt(params.get(0))); // Send actual FireEvent object
             } else {
                 droneRPCSend("NULL", Integer.parseInt(params.get(0))); // Send "NULL" when no events are available
             }
-        } else if (methodName.equals("calculateTravelTime")) {
-            FireEvent event = new FireEvent(params.get(2) + ":" + params.get(3) + ":" +params.get(4),Integer.parseInt(params.get(5)),params.get(6),params.get(7),zones.get(Integer.parseInt(params.get(5))));
-            droneRPCSend(String.valueOf(calculateTravelTime(Integer.parseInt(params.get(0)),Integer.parseInt(params.get(1)),event)), Integer.parseInt(params.get(8)));
-        } else if (methodName.equals("updateFireStatus")){
-            FireEvent event = new FireEvent(params.get(0) + ":" + params.get(1) + ":" +params.get(2),Integer.parseInt(params.get(3)),params.get(4),params.get(5),zones.get(Integer.parseInt(params.get(3))));
-            updateFireStatus(event,Integer.parseInt(params.get(6)));
-            droneRPCSend("ACK:done",Integer.parseInt(params.get(6)));
+        }  else if (methodName.equals("calculateTravelTime")) {
+            System.out.println("Processing calculateTravelTime for drone...");
+
+            int x = Integer.parseInt(params.get(0)); // X coordinate from drone
+            int y = Integer.parseInt(params.get(1)); // Y coordinate from drone
+            String event = params.get(2);
+            FireEvent newEvent = new FireEvent(params.get(2), zones);
+            System.out.println(newEvent);
+            double travelTime = calculateTravelTime(x, y,newEvent); // Directly compute without FireEvent
+            System.out.println("Calculated travel time: " + travelTime + " seconds");
+
+            droneRPCSend(travelTime, Integer.parseInt(params.get(3))); // Send back to drone
+
+        }else if (methodName.equals("updateFireStatus")){
+            System.out.println("Updating the fire status");
+            FireEvent newEvent = new FireEvent(params.get(0), zones);
+            updateFireStatus(newEvent,Integer.parseInt(params.get(1)));
+            droneRPCSend("ACK:done",Integer.parseInt(params.get(2)));
         } else if (methodName.equals("getAdditionalFireEvent")){
-            droneRPCSend(getAdditionalFireEvent(Double.valueOf(params.get(0)),Integer.valueOf(params.get(1)),Integer.valueOf(params.get(2))).toString(),Integer.parseInt(params.get(3)));
+            FireEvent event = getAdditionalFireEvent(Double.valueOf(params.get(0)),Integer.valueOf(params.get(1)),Integer.valueOf(params.get(2)));
+            droneRPCSend(event.toString(),Integer.parseInt(params.get(3)));
         } else if (methodName.equals("SET_EVENTS_LOADED")) {
             setEventsLoaded();
             FISRPCSend("ACK:", Integer.parseInt(params.get(0)));

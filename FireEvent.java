@@ -1,4 +1,5 @@
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * This class represents a fire event with specific details such as time, zone, event type, severity,

@@ -170,42 +170,35 @@ public class DroneSubsystem implements Runnable {
         return Math.sqrt(Math.pow(currentX, 2) + Math.pow(currentY, 2));
     }
 
-    private FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
-        // Compute the target zone center from the event.
-        String[] zoneCoords = targetEvent.getZoneDetails().replaceAll("[()]", "").split(" to ");
+    public void travelToZoneCenter(double travelTime, FireEvent event) {
+
+        // Extract zone coordinates from the FireEvent
+        String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
         String[] startCoords = zoneCoords[0].split(",");
         String[] endCoords = zoneCoords[1].split(",");
-        int destX = (Integer.parseInt(startCoords[0].trim()) + Integer.parseInt(endCoords[0].trim())) / 2;
-        int destY = (Integer.parseInt(startCoords[1].trim()) + Integer.parseInt(endCoords[1].trim())) / 2;
 
-        int startX = currentX;
-        int startY = currentY;
-        // We'll divide the travel into one-second increments.
-        int steps = (int) Math.ceil(fullTravelTime);
-        for (int i = 1; i <= steps; i++) {
-            double fraction = (double) i / steps;
-            // Update position along the straight line from (startX, startY) to (destX, destY).
-            currentX = startX + (int) ((destX - startX) * fraction);
-            currentY = startY + (int) ((destY - startY) * fraction);
-            sleep(1000);  // simulate one second of travel
-            batteryLife -= 1; // decrement battery by 1 second
+        // Parse the coordinates
+        int x1 = Integer.parseInt(startCoords[0].trim());
+        int y1 = Integer.parseInt(startCoords[1].trim());
+        int x2 = Integer.parseInt(endCoords[0].trim());
+        int y2 = Integer.parseInt(endCoords[1].trim());
 
-            // At each step, check if there is an on-route event.
-            // The scheduler returns an event if one is within a predefined threshold.
-            FireEvent newEvent = (FireEvent) sendRequest("getNextAssignedEvent", Thread.currentThread().getName(), currentX, currentY);
-            // If a new event is found and it is different from the one we’re already targeting...
-            if (newEvent != null && newEvent != targetEvent) {
-                System.out.println(Thread.currentThread().getName() + " found on-route event at zone " + newEvent.getZoneId() +
-                        " while en route to zone " + targetEvent.getZoneId() + ". Switching assignment.");
-                // Re-add the original event back to the queue.
-                sendRequest("ADD_FIRE_EVENT", targetEvent);
-                return newEvent;
-            }
-        }
-        // Completed travel to target zone center.
-        currentX = destX;
-        currentY = destY;
-        return targetEvent;
+        // Calculate the center of the fire zone
+        int centerX = (x1 + x2) / 2;
+        int centerY = (y1 + y2) / 2;
+
+        currentState = DroneState.ON_ROUTE;
+        displayState();
+
+        System.out.println(Thread.currentThread().getName() + ": traveling to Zone: " + event.getZoneId() + " with fire at (" + centerX + "," + centerY + ")...");
+        sleep((long) (travelTime * 1000));
+        batteryLife -= travelTime;
+        System.out.println("Battery Life is now: " + batteryLife);
+        System.out.println(Thread.currentThread().getName() + ": arrived at fire center at Zone: " + event.getZoneId());
+
+        currentX = centerX;
+        currentY = centerY;
+
     }
 
     /**
@@ -304,7 +297,7 @@ public class DroneSubsystem implements Runnable {
         currentState = DroneState.RETURNING;
         displayState();
         System.out.println("\n" +Thread.currentThread().getName() + " returning to base...\n");
-        double distance = (double) sendRequest("calculateDistanceToHomeBase", event);
+        double distance = (double) sendRequest("calculateDistanceToHomeBase", event.toString());
         sleep((long) ((distance/18) * 1000));  // Use stored travel time //0,0 to zone 1, zone1 to zone2
         System.out.println();
         descend();
@@ -354,10 +347,12 @@ public class DroneSubsystem implements Runnable {
         System.out.println("running drone------------------------------------------------------------------");
         try {
             while (true) {
-                FireEvent event;
 
 
-                event = (FireEvent) sendRequest("getNextFireEvent");
+
+                String example = (String) sendRequest("getNextFireEvent");
+
+                FireEvent event = new FireEvent(example, scheduler.getZones());
                 if (event == null) {
                     System.out.println("No event found.");
                     break;
@@ -370,14 +365,14 @@ public class DroneSubsystem implements Runnable {
                     if (currentX == 0 && currentY == 0) {
                         takeoff();
                     }
-                    double travelTime = (double) sendRequest("calculateTravelTime", currentX, currentY);
+                    double travelTime = (double) sendRequest("calculateTravelTime", currentX, currentY, event.toString());
 
 
-                    event = travelToZoneCenter(travelTime, event);
+                    travelToZoneCenter(travelTime, event);
 
                     int waterToDrop = Math.min(event.getLitres(), remainingAgent);
                     extinguishFire(waterToDrop);
-                    sendRequest("updateFireStatus", event, waterToDrop);
+                    sendRequest("updateFireStatus", event.toString(), waterToDrop);
                     FireEvent lastEvent = event;
 
                     if (remainingAgent <= 0) {
@@ -389,8 +384,10 @@ public class DroneSubsystem implements Runnable {
                     // Check for leftover agent and battery life
                     if (remainingAgent > 0 && batteryLife > 0) {
                         synchronized (scheduler) {
-                            event = (FireEvent) sendRequest("getAdditionalFireEvent", batteryLife, currentX, currentY);
-                            if (event == null) {
+                            String request = (String) sendRequest("getAdditionalFireEvent", batteryLife, currentX, currentY);
+                            FireEvent event2 = new FireEvent(request, scheduler.getZones());
+                            if (event2 == null) {
+                                System.out.println("Returning to base.");
                                 makeDroneIdleAndRecharge(lastEvent);
                                 break;
                             }
