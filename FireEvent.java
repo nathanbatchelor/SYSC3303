@@ -14,7 +14,7 @@ public class FireEvent implements Serializable {
     private final String severity;
     private int litresNeeded;
 
-    private transient final FireIncidentSubsystem fireIncidentSubsystem; // Prevents serialization issues
+    private transient FireIncidentSubsystem fireIncidentSubsystem; // Prevents serialization issues
 
     /**
      * Constructs a FireEvent object.
@@ -32,7 +32,22 @@ public class FireEvent implements Serializable {
         this.severity = severity;
         this.fireIncidentSubsystem = fireIncidentSubsystem;
     }
+    public FireEvent(String params, Map<Integer, FireIncidentSubsystem> zones) {
+        String[] elements = params.split(",");
 
+        if (elements.length < 4) {
+            throw new IllegalArgumentException("Invalid FireEvent format: " + params);
+        }
+
+        this.time = elements[0].substring(7);
+        this.zoneId = Integer.parseInt(elements[1].substring(8));
+        this.eventType = elements[2].substring(11);
+        this.severity = elements[3].substring(10);
+        this.litresNeeded = Integer.parseInt(elements[4].substring(14));
+
+        // 🔹 Use zoneId to find the correct FireIncidentSubsystem
+        this.fireIncidentSubsystem = zones.getOrDefault(this.zoneId, null);
+    }
     public String getTime() { return time; }
 
     public int getZoneId() { return zoneId; }
@@ -62,6 +77,6 @@ public class FireEvent implements Serializable {
 
     @Override
     public String toString() {
-        return "Time = " + time + ", zoneId=" + zoneId + ", EventType=" + eventType + ", Severity=" + severity;
+        return "Time = " + time + ", zoneId=" + zoneId + ", EventType=" + eventType + ", Severity=" + severity + ", LitresNeeded=" + litresNeeded;
     }
 }
