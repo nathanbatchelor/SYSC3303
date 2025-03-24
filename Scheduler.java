@@ -328,6 +328,10 @@ public class Scheduler implements Runnable {
      * @return The next FireEvent to be processed, or null if no more events remain.
      */
     public synchronized FireEvent getNextFireEvent() {
+        System.out.println(queue.toString());
+        if(queue.poll().getLitres() == 0) {
+            System.out.println("Scheduler Test Print: Event has 0 liters WTF");
+        }
         while (queue.isEmpty()) {
             if (isFinished) {
                 System.out.println("Scheduler: No more fire events. Notifying all waiting drones to stop.");
@@ -335,6 +339,7 @@ public class Scheduler implements Runnable {
                 return null;
             }
             try {
+                System.out.println(queue.toString());
                 System.out.println("Scheduler: Waiting for fire events to be added...");
                 wait();
             } catch (InterruptedException e) {

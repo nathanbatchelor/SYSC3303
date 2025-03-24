@@ -374,6 +374,7 @@ public class DroneSubsystem implements Runnable {
                     if (remainingAgent > 0 && batteryLife > 0) {
                         synchronized (scheduler) {
                             String request = (String) sendRequest("getAdditionalFireEvent", batteryLife, currentX, currentY);
+                            System.out.println("Might be broken here. Request:" + request);
                             FireEvent event2 = new FireEvent(request, scheduler.getZones());
                             if (event2 == null) {
                                 System.out.println("Returning to base.");
