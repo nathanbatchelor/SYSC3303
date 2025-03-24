@@ -335,15 +335,15 @@ public class DroneSubsystem implements Runnable {
         try {
             while (true) {
 
-
-
                 String example = (String) sendRequest("getNextFireEvent");
-
+                System.out.println("DRONE TEST: This is my current fire Event before recration: " + example);
                 FireEvent event = new FireEvent(example, scheduler.getZones());
                 if (event == null) {
                     System.out.println("No event found.");
                     break;
                 }
+
+                System.out.println("DRONE TEST: This is my current fire Event after recration: " + event);
 
                 System.out.println(Thread.currentThread().getName() + " responding to event: " + event);
 
@@ -359,7 +359,9 @@ public class DroneSubsystem implements Runnable {
 
                     int waterToDrop = Math.min(event.getLitres(), remainingAgent);
                     extinguishFire(waterToDrop);
-                    sendRequest("updateFireStatus", event.toString(), waterToDrop);
+                    String newStr = (String) sendRequest("updateFireStatus", event.toString(), waterToDrop);
+                    System.out.println("Might be stuck here: Sending Request: " + newStr);
+                    event = new FireEvent(newStr,scheduler.getZones());
                     FireEvent lastEvent = event;
 
                     if (remainingAgent <= 0) {

@@ -383,7 +383,7 @@ public class Scheduler implements Runnable {
      * @param event The FireEvent being updated.
      * @param waterDropped The amount of water (in liters) dropped on the fire.
      */
-    public synchronized void updateFireStatus(FireEvent event, int waterDropped) {
+    public synchronized FireEvent updateFireStatus(FireEvent event, int waterDropped) {
         event.removeLitres(waterDropped);
         int remainingLiters = event.getLitres();
 
@@ -392,8 +392,10 @@ public class Scheduler implements Runnable {
             System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " still needs " + remainingLiters + "L.");
             ((LinkedList<FireEvent>) queue).addFirst(event);
             notifyAll();
+            return event;
         } else {
             markFireExtinguished(event);
+            return event;
         }
     }
 
@@ -531,7 +533,7 @@ public class Scheduler implements Runnable {
             ObjectInputStream objStream = new ObjectInputStream(byteStream);
             return (FireEvent) objStream.readObject(); //
         } catch (IOException | ClassNotFoundException e) {
-            System.err.println("❌ Error deserializing FireEvent: " + e.getMessage());
+            System.err.println(" Error deserializing FireEvent: " + e.getMessage());
             return null; // Handle failure properly
         }
     }
@@ -580,8 +582,8 @@ public class Scheduler implements Runnable {
         }else if (methodName.equals("updateFireStatus")){
             System.out.println("Updating the fire status");
             FireEvent newEvent = new FireEvent(params.get(0), zones);
-            updateFireStatus(newEvent,Integer.parseInt(params.get(1)));
-            droneRPCSend("ACK:done",Integer.parseInt(params.get(2)));
+            FireEvent nextEvent = updateFireStatus(newEvent,Integer.parseInt(params.get(1)));
+            droneRPCSend(nextEvent.toString(),Integer.parseInt(params.get(2)));
         } else if (methodName.equals("getAdditionalFireEvent")){
             FireEvent event = getAdditionalFireEvent(Double.valueOf(params.get(0)),Integer.valueOf(params.get(1)),Integer.valueOf(params.get(2)));
             droneRPCSend(event.toString(),Integer.parseInt(params.get(3)));
@@ -595,6 +597,7 @@ public class Scheduler implements Runnable {
         }
         return "???";
     }
+
 
 
     public synchronized void droneRPCSend(Object response, int idnum) {

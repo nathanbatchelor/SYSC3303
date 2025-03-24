@@ -18,7 +18,7 @@ public class FireIncidentSimulation {
 //        droneThread2.start();
 
         for (int i = 1; i <= 2; i++){
-            //String droneName = "droneSubsystem" + i;
+            //String droneName = "droneSubsystem" + i;Pandam
             DroneSubsystem droneName = new DroneSubsystem(scheduler,i);
             Thread droneThread = new Thread(droneName);
             droneThread.setName("Drone Subsystem " + i);
