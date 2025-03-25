@@ -143,47 +143,57 @@ public class FireIncidentSubsystem implements Runnable {
 
     // Sends an RPC request (as a serialized object) and waits for a response
     private Object rpc_send(Object request, InetAddress hostAddress, int hostPort) {
+        // Check if the socket is closed
         if (socket == null || socket.isClosed()) {
             return "ERROR: Socket is closed";
         }
         try {
-            System.out.println("\n[Zone " + zoneId + " -> Host] Sending request: " + request);
+            System.out.println("\n[Zone " + zoneId + " -> Host] Sent request: " + request);
+            // Serialize the request object
             ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
             ObjectOutputStream objStream = new ObjectOutputStream(byteStream);
             objStream.writeObject(request);
             objStream.flush();
             byte[] requestData = byteStream.toByteArray();
+
+            // Send the serialized request packet
             DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, hostAddress, hostPort + zoneId);
             socket.send(requestPacket);
 
+            // Receive ACK first
             byte[] ackBuffer = new byte[4096];
             DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
             socket.receive(ackPacket);
-            ObjectInputStream ackStream = new ObjectInputStream(
-                    new ByteArrayInputStream(ackPacket.getData(), 0, ackPacket.getLength()));
+            ObjectInputStream ackStream = new ObjectInputStream(new ByteArrayInputStream(ackPacket.getData(), 0, ackPacket.getLength()));
             Object ackResponse = ackStream.readObject();
             System.out.println("[FIS-Zone " + zoneId + "] Received ACK: " + ackResponse);
             if (!(ackResponse instanceof String) || !((String) ackResponse).startsWith("ACK:")) {
-                System.out.println("Unexpected ACK response. Aborting.");
+                System.out.println("Unexpected response instead of ACK. Aborting.");
                 return "ERROR: No ACK received";
             }
+
+            // Wait for the actual response
             while (true) {
                 byte[] responseBuffer = new byte[4096];
                 DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
-                socket.receive(responsePacket);
+                socket.receive(responsePacket);  // Blocking call
                 ObjectInputStream responseStream = new ObjectInputStream(
                         new ByteArrayInputStream(responsePacket.getData(), 0, responsePacket.getLength()));
                 Object response = responseStream.readObject();
+                // If the response does not start with "ACK:" then it's the actual response
                 if (!(response instanceof String && ((String) response).startsWith("ACK:"))) {
                     return response;
                 }
             }
-        } catch (Exception e) {
+        } catch (SocketException e) {
             System.err.println("Error in rpc_send: " + e.getMessage());
+            return "ERROR: Socket is closed";
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             return "ERROR: Communication failed: " + e.getMessage();
         }
     }
+
 
     public void shutdown() {
         running = false;
