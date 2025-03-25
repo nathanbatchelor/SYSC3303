@@ -116,6 +116,7 @@ public class FireIncidentSubsystem implements Runnable {
         udpListenerThread.setDaemon(true);  // Marking as daemon
         udpListenerThread.start();
 
+
     }
 
 
@@ -179,20 +180,21 @@ public class FireIncidentSubsystem implements Runnable {
                 System.out.println("Unexpected response instead of ACK. Aborting.");
                 return "ERROR: No ACK received";
             }
+            return ackResponse;
 
             // Wait for the actual response
-            while (true) {
-                byte[] responseBuffer = new byte[4096];
-                DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
-                socket.receive(responsePacket);  // Blocking call
-                ObjectInputStream responseStream = new ObjectInputStream(
-                        new ByteArrayInputStream(responsePacket.getData(), 0, responsePacket.getLength()));
-                Object response = responseStream.readObject();
-                // If the response does not start with "ACK:" then it's the actual response
-                if (!(response instanceof String && ((String) response).startsWith("ACK:"))) {
-                    return response;
-                }
-            }
+//            while (true) {
+//                byte[] responseBuffer = new byte[4096];
+//                DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
+//                socket.receive(responsePacket);  // Blocking call
+//                ObjectInputStream responseStream = new ObjectInputStream(
+//                        new ByteArrayInputStream(responsePacket.getData(), 0, responsePacket.getLength()));
+//                Object response = responseStream.readObject();
+//                // If the response does not start with "ACK:" then it's the actual response
+//                if (!(response instanceof String && ((String) response).startsWith("ACK:"))) {
+//                    return response;
+//                }
+//            }
         } catch (SocketException e) {
             System.err.println("Error in rpc_send: " + e.getMessage());
             return "ERROR: Socket is closed";

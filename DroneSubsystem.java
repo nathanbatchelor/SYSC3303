@@ -115,28 +115,47 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " reached ground station.");
     }
 
-    public void travelToZoneCenter(double travelTime, FireEvent event) {
-        // Parse zone coordinates (assumes FireEvent.getZoneDetails() returns "(x1,y1) to (x2,y2)")
-        String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
+
+
+    // This is broken, need to fix
+    private FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
+        // Compute the target zone center from the event.
+        String[] zoneCoords = targetEvent.getZoneDetails().replaceAll("[()]", "").split(" to ");
         String[] startCoords = zoneCoords[0].split(",");
         String[] endCoords = zoneCoords[1].split(",");
-        int x1 = Integer.parseInt(startCoords[0].trim());
-        int y1 = Integer.parseInt(startCoords[1].trim());
-        int x2 = Integer.parseInt(endCoords[0].trim());
-        int y2 = Integer.parseInt(endCoords[1].trim());
-        int centerX = (x1 + x2) / 2;
-        int centerY = (y1 + y2) / 2;
+        int destX = (Integer.parseInt(startCoords[0].trim()) + Integer.parseInt(endCoords[0].trim())) / 2;
+        int destY = (Integer.parseInt(startCoords[1].trim()) + Integer.parseInt(endCoords[1].trim())) / 2;
 
-        currentState = DroneState.ON_ROUTE;
-        displayState();
-        System.out.println(Thread.currentThread().getName() + ": traveling to Zone: " + event.getZoneId() +
-                " with fire at (" + centerX + "," + centerY + ")...");
-        sleep((long) (travelTime * 1000));
-        batteryLife -= travelTime;
-        System.out.println("Battery Life is now: " + batteryLife);
-        System.out.println(Thread.currentThread().getName() + ": arrived at fire center at Zone: " + event.getZoneId());
-        currentX = centerX;
-        currentY = centerY;
+        int startX = currentX;
+        int startY = currentY;
+        // divide the travel into one-second increments.
+        int steps = (int) Math.ceil(fullTravelTime);
+        for (int i = 1; i <= steps; i++) {
+            double fraction = (double) i / steps;
+            // Update position along the straight line from (startX, startY) to (destX, destY).
+            currentX = startX + (int) ((destX - startX) * fraction);
+            currentY = startY + (int) ((destY - startY) * fraction);
+            sleep(1000);  // simulate one second of travel
+            batteryLife -= 1; // decrement battery by 1 second
+
+            // At each step, check if there is an on-route event.
+            // The scheduler returns an event if one is within a predefined threshold.
+
+            FireEvent newEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
+
+            // If a new event is found and it is different from the one we’re already targeting...
+            if (newEvent != null && newEvent != targetEvent) {
+                System.out.println(Thread.currentThread().getName() + " found on-route event at zone " + newEvent.getZoneId() +
+                        " while en route to zone " + targetEvent.getZoneId() + ". Switching assignment.");
+                // Re-add the original event back to the queue.
+                scheduler.addFireEvent(targetEvent);
+                return newEvent;
+            }
+        }
+        // Completed travel to target zone center.
+        currentX = destX;
+        currentY = destY;
+        return targetEvent;
     }
 
     public void extinguishFire(int amount) {

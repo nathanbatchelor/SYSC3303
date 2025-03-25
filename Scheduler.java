@@ -368,9 +368,9 @@ public class Scheduler implements Runnable {
             // (This is handled in invokeMethod; see the getAdditionalFireEvent branch.)
 
             // Check if no message has been processed for a prolonged period.
-            if (isFinished && System.currentTimeMillis() - lastRequestTime > GRACE_PERIOD_MS) {
-                break;
-            }
+//            if (isFinished && System.currentTimeMillis() - lastRequestTime > GRACE_PERIOD_MS) {
+//                break;
+//            }
 
             // Optional: Sleep a short period to avoid busy-waiting if no message was processed.
             if (!messageProcessed) {
@@ -381,11 +381,11 @@ public class Scheduler implements Runnable {
                 }
             }
         }
-        System.out.println("Scheduler exited run loop");
+        //System.out.println("Scheduler exited run loop");
         // Example: In your main simulation class after all threads finish.
-        for (FireIncidentSubsystem fis : this.getZones().values()) {
-            fis.shutdown();
-        }
+//        for (FireIncidentSubsystem fis : this.getZones().values()) {
+//            fis.shutdown();
+//        }
 
     }
 
@@ -402,6 +402,7 @@ public class Scheduler implements Runnable {
                 droneRPCSend("ACK:done", (Integer) params.get(1));
             }
         } else if (methodName.equals("getNextAssignedEvent")) {
+
             String droneId = (String) params.get(0);
             int currentX = (Integer) params.get(1);
             int currentY = (Integer) params.get(2);
