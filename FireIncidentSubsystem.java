@@ -35,6 +35,30 @@ public class FireIncidentSubsystem implements Runnable {
         }
     }
 
+    private class UDPListener implements Runnable {
+        @Override
+        public void run() {
+            System.out.println("UDPListener running for Zone " + zoneId);
+            byte[] buffer = new byte[4096];
+            while (running) {
+                try {
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                    socket.receive(packet);
+                    processUDPPacket(packet);
+                } catch (SocketException se) {
+                    // Socket is closed; exit the loop.
+                    System.out.println("UDPListener for Zone " + zoneId + " detected socket closure, exiting.");
+                    break;
+                } catch (IOException e) {
+                    if (running) {
+                        System.err.println("Error receiving UDP packet: " + e.getMessage());
+                    }
+                    // Optionally, break or continue depending on your design.
+                }
+            }
+        }
+    }
+
     private void processEventFile(String eventFile) {
         boolean eventsAdded = false;
         System.out.println("Processing event file for Zone " + zoneId);
@@ -94,24 +118,8 @@ public class FireIncidentSubsystem implements Runnable {
 
     }
 
-    private class UDPListener implements Runnable {
-        @Override
-        public synchronized void run() {
-            System.out.println("UDPListener running for Zone " + zoneId);
-            byte[] buffer = new byte[4096];
-            while (running) {
-                try {
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                    socket.receive(packet);
-                    processUDPPacket(packet);
-                } catch (IOException e) {
-                    if (running) {
-                        System.err.println("Error receiving UDP packet: " + e.getMessage());
-                    }
-                }
-            }
-        }
-    }
+
+
 
     private void processUDPPacket(DatagramPacket packet) throws IOException {
         ObjectInputStream inputStream = new ObjectInputStream(

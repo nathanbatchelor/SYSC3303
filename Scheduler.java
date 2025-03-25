@@ -16,6 +16,7 @@ public class Scheduler implements Runnable {
     private DatagramSocket FISsendSocket;
     private ArrayList<DatagramSocket> FIS_Sockets = new ArrayList<>();
     private ArrayList<DatagramSocket> drone_Sockets = new ArrayList<>();
+    private boolean zonesLoaded = false;
 
     public static class DroneStatus {
         public String droneId;
