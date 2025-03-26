@@ -3,6 +3,8 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class DroneSubsystem implements Runnable {
     private final Scheduler scheduler;
@@ -19,6 +21,9 @@ public class DroneSubsystem implements Runnable {
     private DatagramSocket socket;
     private InetAddress schedulerAddress;
     private final int DEFAULT_DRONE_PORT = 5500;
+
+    private Timer travelTimer;
+    private boolean arrivedAtFireZone = false;
 
     public enum DroneState {
         IDLE,
@@ -128,6 +133,16 @@ public class DroneSubsystem implements Runnable {
 
         int startX = currentX;
         int startY = currentY;
+
+        if ("ARRIVAL_TIMEOUT".equalsIgnoreCase(targetEvent.fault)) {
+            System.out.println("[Drone " + idNum + "] FAULT injected: Simulating stuck drone en route to zone " + targetEvent.getZoneId());
+            // Simulate drone doing nothing, letting the timer expire
+            while (true) {
+                sleep(1000);  // Stay stuck in place
+                batteryLife -= 1;
+            }
+        }
+
         // divide the travel into one-second increments.
         int steps = (int) Math.ceil(fullTravelTime);
         for (int i = 1; i <= steps; i++) {
@@ -155,6 +170,11 @@ public class DroneSubsystem implements Runnable {
         // Completed travel to target zone center.
         currentX = destX;
         currentY = destY;
+        arrivedAtFireZone = true; // Prevent fault
+        if (travelTimer != null) {
+            travelTimer.cancel();
+            travelTimer = null;
+        }
         return targetEvent;
     }
 
@@ -207,6 +227,23 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
+    private void startTravelFaultTimer(double travelTimeSeconds, FireEvent event) {
+        long timeout = (long) (travelTimeSeconds * 1000 * 1.5); // 1.5x buffer
+        travelTimer = new Timer();
+        travelTimer.schedule(new TimerTask() {
+            public void run() {
+                if (!arrivedAtFireZone) {
+                    System.out.println("[Drone " + idNum + "] Fault detected: drone did not arrive in time.");
+                    sendRequest("FAULT", idNum, "ARRIVAL_TIMEOUT", event);  // This will need to change, just here as an example, replace FAULT with the new method
+                    // You could optionally shut down the drone here:
+                    System.out.println("[Drone " + idNum + "] Initiating shutdown due to fault.");
+                    System.exit(1); // simulate drone failure
+                }
+            }
+        }, timeout);
+    }
+
+
     @Override
     public void run() {
         System.out.println("Running DroneSubsystem " + idNum);
@@ -225,9 +262,23 @@ public class DroneSubsystem implements Runnable {
                         takeoff();
                     }
                     double travelTime = (double) sendRequest("calculateTravelTime", currentX, currentY, event);
+                    arrivedAtFireZone = false;
+                    startTravelFaultTimer(travelTime, event); // event is the current FireEvent
+                    if ("ARRIVAL".equalsIgnoreCase(event.getFault())) {
+                        System.out.println("[Drone " + idNum + "] ARRIVAL fault injected — drone will not move toward target.");
+                        // Drone stays put, timer will go off
+                        sleep((long) (travelTime * 1000 * 2));  // simulate drone doing nothing
+                        continue;
+                    }
+
                     travelToZoneCenter(travelTime, event);
                     int waterToDrop = Math.min(event.getLitres(), remainingAgent);
                     extinguishFire(waterToDrop);
+                    if ("NOZZLE".equalsIgnoreCase(event.getFault())) {
+                        System.out.println("[Drone " + idNum + "] NOZZLE fault injected — nozzle stuck open.");
+                        sendRequest("FAULT", idNum, "NOZZLE_STUCK_OPEN", event); // or whatever your fault method is
+                        System.exit(1); // hard fault shutdown
+                    }
                     sendRequest("updateFireStatus", event, waterToDrop);
                     FireEvent lastEvent = event;
 

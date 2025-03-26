@@ -104,7 +104,8 @@ public class FireIncidentSubsystem implements Runnable {
         int eventZoneId = Integer.parseInt(slices[1]);
         String eventType = slices[2];
         String severity = slices[3];
-        return new FireEvent(time, eventZoneId, eventType, severity, this);
+        String fault = slices[4];
+        return new FireEvent(time, eventZoneId, eventType, severity, fault,this);
     }
 
     @Override
