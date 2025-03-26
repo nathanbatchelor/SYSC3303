@@ -234,10 +234,10 @@ public class DroneSubsystem implements Runnable {
             public void run() {
                 if (!arrivedAtFireZone) {
                     System.out.println("[Drone " + idNum + "] Fault detected: drone did not arrive in time.");
-                    sendRequest("FAULT", idNum, "ARRIVAL_TIMEOUT", event);  // This will need to change, just here as an example, replace FAULT with the new method
+                    //sendRequest("FAULT", idNum, "ARRIVAL_TIMEOUT", event);  // This will need to change, just here as an example, replace FAULT with the new method
                     // You could optionally shut down the drone here:
                     System.out.println("[Drone " + idNum + "] Initiating shutdown due to fault.");
-                    System.exit(1); // simulate drone failure
+                    System.exit(1); // simulate drone failure this is temporary
                 }
             }
         }, timeout);
@@ -262,6 +262,7 @@ public class DroneSubsystem implements Runnable {
                         takeoff();
                     }
                     double travelTime = (double) sendRequest("calculateTravelTime", currentX, currentY, event);
+                    System.out.println("[Drone " + idNum + "] Travel time: " + travelTime);
                     arrivedAtFireZone = false;
                     startTravelFaultTimer(travelTime, event); // event is the current FireEvent
                     if ("ARRIVAL".equalsIgnoreCase(event.getFault())) {

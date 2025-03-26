@@ -229,8 +229,16 @@ public class Scheduler implements Runnable {
                 Thread.currentThread().interrupt();
             }
         }
+
         FireEvent event = queue.poll();
         System.out.println("Scheduler: Sending fire event to drone: " + event);
+
+        // 🧠 If the queue is now empty, and no more are expected, mark finished
+        if (queue.isEmpty()) {
+            isFinished = true;
+            notifyAll();
+        }
+
         return event;
     }
 
@@ -399,7 +407,8 @@ public class Scheduler implements Runnable {
                 FISRPCSend("ACK:", (Integer) params.get(0)); // dummy value; adjust as needed
                 FISRPCSend("SUCCESS", (Integer) params.get(0));
             } else {
-                droneRPCSend("ACK:done", (Integer) params.get(1));
+                int droneId = (Integer) params.get(params.size() - 1);
+                droneRPCSend("ACK:done", droneId);
             }
         } else if (methodName.equals("getNextAssignedEvent")) {
 
@@ -407,29 +416,35 @@ public class Scheduler implements Runnable {
             int currentX = (Integer) params.get(1);
             int currentY = (Integer) params.get(2);
             FireEvent event = getNextAssignedEvent(droneId, currentX, currentY);
-            droneRPCSend(event, (Integer) params.get(3));
+            int droneId2 = (Integer) params.get(params.size() - 1);
+            droneRPCSend(event, droneId2);
         } else if (methodName.equals("calculateDistanceToHomeBase")) {
             FireEvent event = (FireEvent) params.get(0);
             double distance = calculateDistanceToHomeBase(event);
-            droneRPCSend(distance, (Integer) params.get(1));
+            int droneId = (Integer) params.get(params.size() - 1);
+            droneRPCSend(distance, droneId);
         } else if (methodName.equals("getNextFireEvent")) {
             System.out.println("Sending drone the event");
             FireEvent event = getNextFireEvent();
-            droneRPCSend(event, (Integer) params.get(0));
+            int droneId = (Integer) params.get(params.size() - 1);
+            droneRPCSend(event, droneId);
         } else if (methodName.equals("calculateTravelTime")) {
             int x = (Integer) params.get(0);
             int y = (Integer) params.get(1);
             FireEvent event = (FireEvent) params.get(2);
             double travelTime = calculateTravelTime(x, y, event);
-            droneRPCSend(travelTime, (Integer) params.get(3));
+            int droneId = (Integer) params.get(params.size() - 1);
+            droneRPCSend(travelTime, droneId);
         } else if (methodName.equals("updateFireStatus")) {
             FireEvent event = (FireEvent) params.get(0);
             int waterDropped = (Integer) params.get(1);
             updateFireStatus(event, waterDropped);
-            droneRPCSend("ACK:done", (Integer) params.get(2));
+            int droneId = (Integer) params.get(params.size() - 1);
+            droneRPCSend("ACK:done", droneId);
         } else if (methodName.equals("getAdditionalFireEvent")) {
             FireEvent event = getAdditionalFireEvent((Double) params.get(0), (Integer) params.get(1), (Integer) params.get(2));
-            droneRPCSend(event, (Integer) params.get(3));
+            int droneId = (Integer) params.get(params.size() - 1);
+            droneRPCSend(event, droneId);
         } else if (methodName.equals("SET_EVENTS_LOADED")) {
             setEventsLoaded();
             FISRPCSend("ACK:", (Integer) params.get(0));
