@@ -1,7 +1,22 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
-
+/**
+ * The Scheduler class acts as a centralized system for handling fire events.
+ * It manages incoming fire events and assigns tasks to drones.
+ * This class handles zones, fire events, and communication with subsystems
+ * for fire incident management.
+ *
+ * Implements the Runnable interface to allow it to execute in a separate thread.
+ *
+ * @author Joey Andrwes
+ * @author Grant Phillips
+ * @version 1.0
+ *
+ * @author Joey Andrews
+ * @author Grant Phillips
+ * @version 2.0
+ */
 public class Scheduler implements Runnable {
     private final Queue<FireEvent> queue = new LinkedList<>();
     private final Map<Integer, FireIncidentSubsystem> zones = new HashMap<>();
@@ -233,7 +248,7 @@ public class Scheduler implements Runnable {
         FireEvent event = queue.poll();
         System.out.println("Scheduler: Sending fire event to drone: " + event);
 
-        // 🧠 If the queue is now empty, and no more are expected, mark finished
+        // If the queue is now empty, and no more are expected, mark finished
         if (queue.isEmpty()) {
             isFinished = true;
             notifyAll();
