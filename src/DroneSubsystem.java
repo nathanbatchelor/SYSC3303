@@ -22,6 +22,7 @@ public class DroneSubsystem implements Runnable {
     private InetAddress schedulerAddress;
     private final int DEFAULT_DRONE_PORT = 5500;
     private boolean busy = false;
+    private boolean hardFault = false;
 
     private Timer travelTimer;
     private boolean arrivedAtFireZone = false;
@@ -36,7 +37,9 @@ public class DroneSubsystem implements Runnable {
     // Sends an RPC request as a serialized list: [methodName, param1, param2, …, droneId]
     public Object sendRequest(String methodName, Object... parameters) {
         try {
-            System.out.println("Drone " + idNum + " sending request: " + methodName);
+            if(!methodName.equals("STOP_?") && !methodName.equals("getNextFireEvent")) {
+                System.out.println("Drone " + idNum + " sending request: " + methodName);
+            }
             List<Object> requestList = new ArrayList<>();
             requestList.add(methodName);
             requestList.addAll(Arrays.asList(parameters));
@@ -51,7 +54,7 @@ public class DroneSubsystem implements Runnable {
             // Send to scheduler on port 6500+idNum
             DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, schedulerAddress, 6500 + idNum);
             socket.send(requestPacket);
-            System.out.println("Drone " + idNum + " request sent, waiting for response...");
+//            System.out.println("Drone " + idNum + " request sent, waiting for response from: " + methodName);
 
             while (true) {
                 try {
@@ -61,11 +64,10 @@ public class DroneSubsystem implements Runnable {
                     ObjectInputStream inputStream = new ObjectInputStream(
                             new ByteArrayInputStream(responsePacket.getData(), 0, responsePacket.getLength()));
                     Object response = inputStream.readObject();
-                    System.out.println("Drone " + idNum + " received response: " + response);
+                    if(response!=null){
+                        System.out.println(String.format("Drone %d recieved response: %s", idNum, response));
+                    }
                     return response;
-                } catch (SocketTimeoutException e) {
-                    System.out.println("Drone " + idNum + " waiting for response...");
-                    continue;
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
                     return "ERROR: Failed to receive response.";
@@ -94,17 +96,16 @@ public class DroneSubsystem implements Runnable {
 
     public void displayState() {
         switch (currentState) {
-            case IDLE:
-                System.out.println("Drone is currently idle.");
+            case IDLE: System.out.println("Drone " + idNum + " is currently idle.");
                 break;
             case ON_ROUTE:
-                System.out.println("Drone is on route to fire.");
+                System.out.println("Drone " + idNum + " is on route to fire.");
                 break;
             case DROPPING_AGENT:
-                System.out.println("Drone is dropping agent on fire.");
+                System.out.println("Drone is " + idNum + "  dropping agent on fire.");
                 break;
             case RETURNING:
-                System.out.println("Drone is returning to base.");
+                System.out.println("Drone " + idNum + " is returning to base.");
                 break;
         }
     }
@@ -190,7 +191,7 @@ public class DroneSubsystem implements Runnable {
         sleep(timeToDrop * 1000);
         batteryLife -= timeToDrop;
         remainingAgent -= amount;
-        System.out.println(Thread.currentThread().getName() + " Dispensed " + amount + "L. Remaining capacity: " + remainingAgent + "L.");
+        System.out.println(Thread.currentThread().getName() + "Dispensed " + amount + "L. Remaining capacity: " + remainingAgent + "L.");
         System.out.println("\n" + Thread.currentThread().getName() + " closing nozzle...");
         sleep(1000);
         batteryLife -= 1;
@@ -208,8 +209,6 @@ public class DroneSubsystem implements Runnable {
         System.out.println("----------------------------------------\n");
         currentX = 0;
         currentY = 0;
-        currentState = DroneState.IDLE;
-        displayState();
     }
 
     private void makeDroneIdleAndRecharge(FireEvent lastEvent) {
@@ -233,10 +232,11 @@ public class DroneSubsystem implements Runnable {
         travelTimer = new Timer();
         travelTimer.schedule(new TimerTask() {
             public void run() {
-            if (!arrivedAtFireZone && currentState == DroneState.ON_ROUTE) {
+            if (!arrivedAtFireZone) {
                 System.out.println("[Drone " + idNum + "] Fault detected: drone did not arrive in time.");
                 sendRequest("handleDroneFault",event,"timeout",idNum);
-                //sendRequest("FAULT", idNum, "ARRIVAL_TIMEOUT", event);  // This will need to change, just here as an example, replace FAULT with the new method
+                currentState = DroneState.RETURNING;
+
                 makeDroneIdleAndRecharge(event);
                 //exit(1); // simulate drone failure this is temporary
             }
@@ -249,17 +249,21 @@ public class DroneSubsystem implements Runnable {
     public void run() {
         System.out.println("Running DroneSubsystem " + idNum);
         try {
+            //TODO: FIGURE OUT UDP STOP DRONES!, then stop singular drone with drone ID
+
             // Outer loop: keep checking for new fire events.
             while (true) {
+
+                if ((Boolean)sendRequest("STOP_?", idNum)) break;
+
                 FireEvent event = (FireEvent) sendRequest("getNextFireEvent");
-                busy=true;
+                busy = true;
                 if (event == null) {
-                    busy=false;
-                    System.out.println("No event found. Shutting down drone " + idNum + ".");
-                    break; // Exit the loop when no event is available.
+                    busy = false;
+                    continue;
                 }
                 // Process the received event.
-                while (event != null) {
+                while (true) {
                     displayState();
                     if (currentX == 0 && currentY == 0) {
                         takeoff();
@@ -268,22 +272,36 @@ public class DroneSubsystem implements Runnable {
                     System.out.println("[Drone " + idNum + "] Travel time: " + travelTime);
 
                     arrivedAtFireZone = false;
-                    startTravelFaultTimer(travelTime, event); // event is the current FireEvent
+                    // handle arrival fault
                     if (event.getFault().equalsIgnoreCase("ARRIVAL")) {
-                        System.out.println("[Drone " + idNum + "] ARRIVAL fault injected — drone will not move toward target.");
+                        startTravelFaultTimer(travelTime, event); // event is the current FireEvent
+                        System.out.println("\033[1;30m \033[43m[Drone " + idNum + "] ARRIVAL fault injected — drone will not move toward target.\033[0m");
                         // Drone stays put, timer will go off
                         sleep((long) (travelTime * 1000 * 2));  // simulate drone doing nothing
+                    }
+                    if(currentState == DroneState.RETURNING) {
+                        break;
+                    }
+                    //Handle packet loss fault
+                    if ("PACKET_LOSS".equalsIgnoreCase(event.getFault())) {
+                        System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] PACKET LOSS fault injected - Lost packets in communication. \033[0m");
+                        sendRequest("handleDroneFault", event, "packet_loss", idNum);
+                        break;
                     }
 
                     travelToZoneCenter(travelTime, event);
                     int waterToDrop = Math.min(event.getLitres(), remainingAgent);
-                    extinguishFire(waterToDrop);
-                    System.out.println("FAULT" + event.getFault());
+
+                    //handle nozzle fault
                     if ("NOZZLE".equalsIgnoreCase(event.getFault())) {
-                        System.out.println("[Drone " + idNum + "] NOZZLE fault injected — nozzle stuck open.");
+                        System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] NOZZLE fault injected — nozzle stuck CLOSED. \033[0m");
                         sendRequest("handleDroneFault", event, "nozzle", idNum); // or whatever your fault method is
-                        System.exit(1); // hard fault shutdown (TODO: get rid of the exit as this shuts down everything)
+                        hardFault = true;
+                        break;
                     }
+
+
+                    extinguishFire(waterToDrop);
                     sendRequest("updateFireStatus", event, waterToDrop);
                     FireEvent lastEvent = event;
 
@@ -305,6 +323,7 @@ public class DroneSubsystem implements Runnable {
                     }
                 } // end inner loop
 
+                if(hardFault) break;
                 // After finishing an event sequence, check again for a new event.
             } // end outer loop
         } catch (Exception e) {

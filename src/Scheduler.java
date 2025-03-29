@@ -20,10 +20,12 @@ import java.util.*;
 public class Scheduler implements Runnable {
     private final Queue<FireEvent> queue = new LinkedList<>();
     private final Map<Integer, FireIncidentSubsystem> zones = new HashMap<>();
+    private final Set<Integer> droneIds = new HashSet<>();
     private final String zoneFile;
     private final String eventFile;
     private volatile boolean isFinished = false;
     private volatile boolean isLoaded = false;
+    private Boolean stopDrones = false;
     private SchedulerState state = SchedulerState.WAITING_FOR_EVENTS;
     public static final int DEFAULT_FIS_PORT = 5000;
     private final int DEFAULT_DRONE_PORT = 5500;
@@ -32,6 +34,8 @@ public class Scheduler implements Runnable {
     private ArrayList<DatagramSocket> FIS_Sockets = new ArrayList<>();
     private ArrayList<DatagramSocket> drone_Sockets = new ArrayList<>();
     private boolean zonesLoaded = false;
+    private int numEvents = 0;
+    private int completedEvents = 0;
 
     public static class DroneStatus {
         public String droneId;
@@ -231,9 +235,10 @@ public class Scheduler implements Runnable {
     }
 
     public synchronized FireEvent getNextFireEvent() {
-        while (queue.isEmpty()) {
+        while(completedEvents == numEvents){
             if (isFinished) {
                 System.out.println("Scheduler: No more fire events. Notifying all waiting drones to stop.");
+                stopDrones = true;
                 notifyAll();
                 return null;
             }
@@ -246,11 +251,15 @@ public class Scheduler implements Runnable {
         }
 
         FireEvent event = queue.poll();
-        System.out.println("Scheduler: Sending fire event to drone: " + event);
+
+        if (event != null) {
+            System.out.println("Scheduler: Sending fire event to drone: " + event);
+        }
 
         // If the queue is now empty, and no more are expected, mark finished
         if (queue.isEmpty()) {
             isFinished = true;
+//            stopDrones = true;
             notifyAll();
         }
 
@@ -279,6 +288,7 @@ public class Scheduler implements Runnable {
             notifyAll();
         } else {
             markFireExtinguished(event);
+            completedEvents++;
         }
     }
 
@@ -300,10 +310,12 @@ public class Scheduler implements Runnable {
         event.remFault();
         ((LinkedList<FireEvent>) queue).addFirst(event);
         if (type.equals("timeout")){
-            System.out.println("Scheduler: handling drone travel timeout");
+            System.out.println("\u001B[33m !!!!Scheduler: handling drone TRAVEL TIMEOUT!!!! \u001B[0m");
         } else if (type.equals("nozzle")) {
-            System.out.println("Scheduler: handling drone nozzle failure");
+            System.out.println("\u001B[33m !!!!Scheduler: handling drone NOZZLE failure!!!! \u001B[0m");
             //drone_Sockets.
+        } else if (type.equals("packet_loss")) {
+            System.out.println("\u001B[33m !!!!Scheduler: handling drone PACKET_LOSS failure!!!! \u001B[0m");
         }
     }
 
@@ -334,7 +346,7 @@ public class Scheduler implements Runnable {
         ArrayList<String> knownFISMethods = new ArrayList<>(Arrays.asList("ADD_FIRE_EVENT", "SET_EVENTS_LOADED"));
         ArrayList<String> knowndroneMethods = new ArrayList<>(Arrays.asList(
                 "getNextAssignedEvent", "ADD_FIRE_EVENT", "calculateDistanceToHomeBase",
-                "getNextFireEvent", "calculateTravelTime", "updateFireStatus", "getAdditionalFireEvent","handleDroneFault"));
+                "getNextFireEvent", "calculateTravelTime", "updateFireStatus", "getAdditionalFireEvent","handleDroneFault", "STOP_?"));
         try {
             FISsendSocket.setSoTimeout(1000);
             dronesendSocket.setSoTimeout(1000);
@@ -424,71 +436,102 @@ public class Scheduler implements Runnable {
     }
 
     private Object invokeMethod(String methodName, List<Object> params, boolean from) {
-        System.out.println("invokeMethod: " + methodName);
-        if (methodName.equals("ADD_FIRE_EVENT")) {
-            FireEvent event = (FireEvent) params.get(0);
-            System.out.println("Received event: " + event);
-            addFireEvent(event);
-            if (from) {
-                FISRPCSend("ACK:", (Integer) params.get(0)); // dummy value; adjust as needed
-                FISRPCSend("SUCCESS", (Integer) params.get(0));
-            } else {
+        switch (methodName) {
+            case "ADD_FIRE_EVENT": {
+                this.numEvents++;
+                FireEvent event = (FireEvent) params.get(0);
+                System.out.println("Received event: " + event);
+                addFireEvent(event);
+                if (from) {
+                    FISRPCSend("ACK:", (Integer) params.get(0));
+                    FISRPCSend("SUCCESS", (Integer) params.get(0));
+                } else {
+                    int droneId = (Integer) params.get(params.size() - 1);
+                    droneRPCSend("ACK:done", droneId);
+                }
+                break;
+            }
+            case "getNextAssignedEvent": {
+                String droneId = (String) params.get(0);
+                int currentX = (Integer) params.get(1);
+                int currentY = (Integer) params.get(2);
+                FireEvent event = getNextAssignedEvent(droneId, currentX, currentY);
+                int droneId2 = (Integer) params.get(params.size() - 1);
+                droneRPCSend(event, droneId2);
+                break;
+            }
+            case "calculateDistanceToHomeBase": {
+                FireEvent event = (FireEvent) params.get(0);
+                double distance = calculateDistanceToHomeBase(event);
+                int droneId = (Integer) params.get(params.size() - 1);
+                droneRPCSend(distance, droneId);
+                break;
+            }
+            case "getNextFireEvent": {
+                System.out.println("Sending drone the event");
+                FireEvent event = getNextFireEvent();
+                int droneId = (Integer) params.get(params.size() - 1);
+                droneRPCSend(event, droneId);
+                break;
+            }
+            case "calculateTravelTime": {
+                int x = (Integer) params.get(0);
+                int y = (Integer) params.get(1);
+                FireEvent event = (FireEvent) params.get(2);
+                double travelTime = calculateTravelTime(x, y, event);
+                int droneId = (Integer) params.get(params.size() - 1);
+                droneRPCSend(travelTime, droneId);
+                break;
+            }
+            case "updateFireStatus": {
+                FireEvent event = (FireEvent) params.get(0);
+                int waterDropped = (Integer) params.get(1);
+                updateFireStatus(event, waterDropped);
                 int droneId = (Integer) params.get(params.size() - 1);
                 droneRPCSend("ACK:done", droneId);
+                break;
             }
-        } else if (methodName.equals("getNextAssignedEvent")) {
-
-            String droneId = (String) params.get(0);
-            int currentX = (Integer) params.get(1);
-            int currentY = (Integer) params.get(2);
-            FireEvent event = getNextAssignedEvent(droneId, currentX, currentY);
-            int droneId2 = (Integer) params.get(params.size() - 1);
-            droneRPCSend(event, droneId2);
-        } else if (methodName.equals("calculateDistanceToHomeBase")) {
-            FireEvent event = (FireEvent) params.get(0);
-            double distance = calculateDistanceToHomeBase(event);
-            int droneId = (Integer) params.get(params.size() - 1);
-            droneRPCSend(distance, droneId);
-        } else if (methodName.equals("getNextFireEvent")) {
-            System.out.println("Sending drone the event");
-            FireEvent event = getNextFireEvent();
-            int droneId = (Integer) params.get(params.size() - 1);
-            droneRPCSend(event, droneId);
-        } else if (methodName.equals("calculateTravelTime")) {
-            int x = (Integer) params.get(0);
-            int y = (Integer) params.get(1);
-            FireEvent event = (FireEvent) params.get(2);
-            double travelTime = calculateTravelTime(x, y, event);
-            int droneId = (Integer) params.get(params.size() - 1);
-            droneRPCSend(travelTime, droneId);
-        } else if (methodName.equals("updateFireStatus")) {
-            FireEvent event = (FireEvent) params.get(0);
-            int waterDropped = (Integer) params.get(1);
-            updateFireStatus(event, waterDropped);
-            int droneId = (Integer) params.get(params.size() - 1);
-            droneRPCSend("ACK:done", droneId);
-        } else if (methodName.equals("getAdditionalFireEvent")) {
-            FireEvent event = getAdditionalFireEvent((Double) params.get(0), (Integer) params.get(1), (Integer) params.get(2));
-            int droneId = (Integer) params.get(params.size() - 1);
-            droneRPCSend(event, droneId);
-        } else if (methodName.equals("SET_EVENTS_LOADED")) {
-            setEventsLoaded();
-            FISRPCSend("ACK:", (Integer) params.get(0));
-            FISRPCSend("SUCCESS", (Integer) params.get(0));
-        } else if (methodName.equals("handleDroneFault")) {
-            int droneId = (Integer) params.get(2);
-            handleDroneFault((FireEvent) params.get(0),(String)params.get(1),droneId);
-            droneRPCSend("ACK:done", droneId);
-        } else {
-            System.out.println("Unknown method: " + methodName);
-            return "FAILED";
+            case "getAdditionalFireEvent": {
+                FireEvent event = getAdditionalFireEvent(
+                        (Double) params.get(0),
+                        (Integer) params.get(1),
+                        (Integer) params.get(2)
+                );
+                int droneId = (Integer) params.get(params.size() - 1);
+                droneRPCSend(event, droneId);
+                break;
+            }
+            case "SET_EVENTS_LOADED": {
+                setEventsLoaded();
+                FISRPCSend("ACK:", (Integer) params.get(0));
+                FISRPCSend("SUCCESS", (Integer) params.get(0));
+                break;
+            }
+            case "handleDroneFault": {
+                int droneId = (Integer) params.get(2);
+                handleDroneFault((FireEvent) params.get(0), (String) params.get(1), droneId);
+                droneRPCSend("ACK:done", droneId);
+                break;
+            }
+            case "STOP_?": {
+                System.out.println("Sending stop drone signal");
+                boolean stop = isStopDrones();
+                int droneId = (Integer) params.get(params.size() - 1);
+                droneRPCSend(stop, droneId);
+                break;
+            }
+            default:
+                System.out.println("Unknown method: " + methodName);
+                return "FAILED";
         }
         return "???";
     }
 
     public synchronized void droneRPCSend(Object response, int idnum) {
         try {
-            System.out.println("Sending response to drone " + idnum + ": " + response);
+            if (response!=null){
+                System.out.println("Sending response to drone " + idnum + ": " + response);
+            }
             ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
             ObjectOutputStream objStream = new ObjectOutputStream(byteStream);
             objStream.writeObject(response);
@@ -514,5 +557,9 @@ public class Scheduler implements Runnable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public boolean isStopDrones() {
+        return stopDrones;
     }
 }

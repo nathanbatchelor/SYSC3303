@@ -14,6 +14,7 @@ public class FireIncidentSubsystem implements Runnable {
     private final int schedulerPort;
     private Thread udpListenerThread;
     private String eventFile;
+    private int numEvents;
 
     public FireIncidentSubsystem(String eventFile, int zoneId,
                                  int x1, int y1, int x2, int y2) throws UnknownHostException {
@@ -92,6 +93,7 @@ public class FireIncidentSubsystem implements Runnable {
             List<Object> request = new ArrayList<>();
             request.add("SET_EVENTS_LOADED");
             request.add(zoneId);
+            request.add(numEvents);
             Object response = rpc_send(request, schedulerAddress, schedulerPort);
             System.out.println("Setting events to loaded for Zone " + zoneId + ": " + response);
             System.out.println("----------------------------------------\n");
@@ -116,12 +118,7 @@ public class FireIncidentSubsystem implements Runnable {
         udpListenerThread.setName("UDPListener-Zone" + zoneId);
         udpListenerThread.setDaemon(true);  // Marking as daemon
         udpListenerThread.start();
-
-
     }
-
-
-
 
     private void processUDPPacket(DatagramPacket packet) throws IOException {
         ObjectInputStream inputStream = new ObjectInputStream(

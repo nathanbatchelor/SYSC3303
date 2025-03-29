@@ -72,7 +72,7 @@ public class FireEvent implements Serializable {
         return fault;
     }
     public void remFault() {
-        fault=null;
+        fault="NONE";
     }
 
 }
