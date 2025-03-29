@@ -37,6 +37,10 @@ public class Scheduler implements Runnable {
     private int numEvents = 0;
     private int completedEvents = 0;
 
+    public boolean timeoutFault = false;
+    public boolean nozzleFault = false;
+    public boolean packetFault = false;
+
     public static class DroneStatus {
         public String droneId;
         public int x;
@@ -51,12 +55,17 @@ public class Scheduler implements Runnable {
         SHUTTING_DOWN,
     }
 
-    public Scheduler(String zoneFile, String eventFile, int numDrones) {
+    public Scheduler(String zoneFile, String eventFile, int numDrones, int baseOffsetport) {
         this.zoneFile = zoneFile;
         this.eventFile = eventFile;
+        int droneBasePort = 6500 + baseOffsetport;
+        int fisBasePort = 6100 + baseOffsetport;
+        int fisSendPort = 6000 + baseOffsetport;
+        int droneSendPort = 6001 + baseOffsetport;
+
         for (int i = 1; i <= numDrones; i++) {
             try {
-                DatagramSocket drone_socket = new DatagramSocket(6500 + i);
+                DatagramSocket drone_socket = new DatagramSocket(droneBasePort + i);
                 drone_socket.setSoTimeout(1000);
                 drone_Sockets.add(drone_socket);
             } catch (SocketException e) {
@@ -64,15 +73,15 @@ public class Scheduler implements Runnable {
             }
         }
         try {
-            FISsendSocket = new DatagramSocket(6000);
-            dronesendSocket = new DatagramSocket(6001);
+            FISsendSocket = new DatagramSocket(fisSendPort);
+            dronesendSocket = new DatagramSocket(droneSendPort);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
-        readZoneFile();
+        readZoneFile(fisBasePort);
     }
 
-    public void readZoneFile() {
+    public void readZoneFile(int fisBasePort) {
         try {
             File file = new File(this.zoneFile);
             System.out.println("Checking path: " + file.getAbsolutePath());
@@ -105,9 +114,9 @@ public class Scheduler implements Runnable {
                         }
                         int x1 = startCoords[0], y1 = startCoords[1];
                         int x2 = endCoords[0], y2 = endCoords[1];
-                        FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(eventFile, zoneId, x1, y1, x2, y2);
+                        FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(eventFile, zoneId, x1, y1, x2, y2, 0);
                         zones.put(zoneId, fireIncidentSubsystem);
-                        DatagramSocket socket = new DatagramSocket(6100 + zoneId);
+                        DatagramSocket socket = new DatagramSocket(fisBasePort + zoneId);
                         socket.setSoTimeout(1000);
                         FIS_Sockets.add(socket);
                         Thread thread = new Thread(fireIncidentSubsystem);
@@ -307,16 +316,18 @@ public class Scheduler implements Runnable {
     }
 
     public synchronized void handleDroneFault(FireEvent event, String type,int idnum){
+        if (event.getFault().equals("ARRIVAL")){
+            System.out.println("\u001B[33m !!!!Scheduler: handling drone TRAVEL TIMEOUT!!!! \u001B[0m");
+            timeoutFault = true;
+        } else if (event.getFault().equals("NOZZLE")) {
+            System.out.println("\u001B[33m !!!!Scheduler: handling drone NOZZLE failure!!!! \u001B[0m");
+            nozzleFault = true;
+        } else if (event.getFault().equals("PACKET_LOSS")) {
+            System.out.println("\u001B[33m !!!!Scheduler: handling drone PACKET_LOSS failure!!!! \u001B[0m");
+            packetFault = true;
+        }
         event.remFault();
         ((LinkedList<FireEvent>) queue).addFirst(event);
-        if (type.equals("timeout")){
-            System.out.println("\u001B[33m !!!!Scheduler: handling drone TRAVEL TIMEOUT!!!! \u001B[0m");
-        } else if (type.equals("nozzle")) {
-            System.out.println("\u001B[33m !!!!Scheduler: handling drone NOZZLE failure!!!! \u001B[0m");
-            //drone_Sockets.
-        } else if (type.equals("packet_loss")) {
-            System.out.println("\u001B[33m !!!!Scheduler: handling drone PACKET_LOSS failure!!!! \u001B[0m");
-        }
     }
 
     public synchronized void removeFireEvent(FireEvent event) {
@@ -396,7 +407,6 @@ public class Scheduler implements Runnable {
                         if (obj instanceof List) {
                             List<Object> list = (List<Object>) obj;
                             if (knowndroneMethods.contains(list.get(0))) {
-                                System.out.println("Calling invokeMethod for Drone");
                                 invokeMethod((String) list.get(0), list.subList(1, list.size()), false);
                                 messageProcessed = true;
                             }
@@ -514,7 +524,6 @@ public class Scheduler implements Runnable {
                 break;
             }
             case "STOP_?": {
-                System.out.println("Sending stop drone signal");
                 boolean stop = isStopDrones();
                 int droneId = (Integer) params.get(params.size() - 1);
                 droneRPCSend(stop, droneId);

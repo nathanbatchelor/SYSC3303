@@ -1,4 +1,4 @@
-# SYSC3303 Project: Iteration 2
+# SYSC3303 Project: Iteration 4
 ### Group 1
 
 This program simulates a coordinated fire response system using threads in Java, where drones extinguish fires based on real-time event data.
@@ -15,7 +15,7 @@ Assigns fire incidents to available drones.
 Removes fire events when fully extinguished.
 
 #### DroneSubsystem:
-Drones take off, travel, and extinguish fires in assigned zones.
+Drones take off, travel, and extinguish fires in assigned zones. Handle faults, can be turned on or off due to fault type
 
 # Files
 

@@ -24,6 +24,10 @@ public class DroneSubsystem implements Runnable {
     private boolean busy = false;
     private boolean hardFault = false;
 
+    public boolean arrivalFault = false;
+    public boolean nozzleFault = false;
+    public boolean packetlFault = false;
+
     private Timer travelTimer;
     private boolean arrivedAtFireZone = false;
 
@@ -79,9 +83,9 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
-    public DroneSubsystem(Scheduler scheduler, int idNum) {
+    public DroneSubsystem(Scheduler scheduler, int idNum, int baseOffsetport) {
         try {
-            socket = new DatagramSocket(DEFAULT_DRONE_PORT + idNum);
+            socket = new DatagramSocket(DEFAULT_DRONE_PORT + idNum + baseOffsetport);
             schedulerAddress = InetAddress.getLocalHost();
             System.out.println("DroneSubsystem " + idNum + " is listening on port " + (DEFAULT_DRONE_PORT + idNum));
         } catch (SocketException | UnknownHostException e) {
@@ -244,6 +248,35 @@ public class DroneSubsystem implements Runnable {
         }, timeout);
     }
 
+    public boolean handleArrivalFault(FireEvent event, double travelTime) {
+        if(event.getFault() == "ARRIVAL"){
+            System.out.println("\033[1;30m \033[43m[Drone " + idNum + "] ARRIVAL fault injected — drone will not move toward target.\033[0m");
+            startTravelFaultTimer(travelTime, event);
+            arrivalFault = true;
+            sleep((long) (travelTime * 1000 * 2));
+        }
+        return arrivalFault;
+    }
+
+    public boolean handleNozzleFault(FireEvent event) {
+        if(event.getFault() == "NOZZLE") {
+            System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] NOZZLE fault injected — nozzle stuck CLOSED. \033[0m");
+            //sendRequest("handleDroneFault", event, "nozzle", idNum);
+            nozzleFault = true;
+            hardFault = true;
+        }
+        return nozzleFault;
+    }
+
+    public boolean handlePacketLossFault(FireEvent event) {
+        if(event.getFault() == "PACKET_LOSS") {
+            System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] PACKET LOSS fault injected - Lost packets in communication. \033[0m");
+            //sendRequest("handleDroneFault", event, "packet_loss", idNum);
+            packetlFault = true;
+        }
+        return packetlFault;
+    }
+
 
     @Override
     public void run() {
@@ -276,6 +309,7 @@ public class DroneSubsystem implements Runnable {
                     if (event.getFault().equalsIgnoreCase("ARRIVAL")) {
                         startTravelFaultTimer(travelTime, event); // event is the current FireEvent
                         System.out.println("\033[1;30m \033[43m[Drone " + idNum + "] ARRIVAL fault injected — drone will not move toward target.\033[0m");
+                        arrivalFault = true;
                         // Drone stays put, timer will go off
                         sleep((long) (travelTime * 1000 * 2));  // simulate drone doing nothing
                     }
@@ -286,6 +320,7 @@ public class DroneSubsystem implements Runnable {
                     if ("PACKET_LOSS".equalsIgnoreCase(event.getFault())) {
                         System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] PACKET LOSS fault injected - Lost packets in communication. \033[0m");
                         sendRequest("handleDroneFault", event, "packet_loss", idNum);
+                        packetlFault = true;
                         break;
                     }
 
@@ -297,6 +332,7 @@ public class DroneSubsystem implements Runnable {
                         System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] NOZZLE fault injected — nozzle stuck CLOSED. \033[0m");
                         sendRequest("handleDroneFault", event, "nozzle", idNum); // or whatever your fault method is
                         hardFault = true;
+                        nozzleFault = true;
                         break;
                     }
 

@@ -17,7 +17,7 @@ public class FireIncidentSubsystem implements Runnable {
     private int numEvents;
 
     public FireIncidentSubsystem(String eventFile, int zoneId,
-                                 int x1, int y1, int x2, int y2) throws UnknownHostException {
+                                 int x1, int y1, int x2, int y2, int baseOffsetport) throws UnknownHostException {
         this.schedulerAddress = InetAddress.getLocalHost();
         this.schedulerPort = DEFAULT_SCHEDULER_PORT;
         this.zoneId = zoneId;
@@ -25,7 +25,7 @@ public class FireIncidentSubsystem implements Runnable {
         this.y1 = y1;
         this.x2 = x2;
         this.y2 = y2;
-        PORT = DEFAULT_FIS_PORT + zoneId;
+        PORT = DEFAULT_FIS_PORT + zoneId + baseOffsetport;
         this.eventFile = eventFile;
         try {
             this.socket = new DatagramSocket(PORT);
@@ -60,7 +60,7 @@ public class FireIncidentSubsystem implements Runnable {
         }
     }
 
-    private void processEventFile(String eventFile) {
+    public void processEventFile(String eventFile) {
         boolean eventsAdded = false;
         System.out.println("Processing event file for Zone " + zoneId);
         try (BufferedReader reader = new BufferedReader(new FileReader(eventFile))) {
