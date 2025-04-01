@@ -9,6 +9,8 @@ public class FireIncidentSimulation {
         String zoneFile = "src//input//test_zone_file.csv";
 
         Scheduler scheduler = new Scheduler(zoneFile, fireIncidentFile, 5, 0);
+        SimulationUI ui = new SimulationUI();
+
         Thread schedulerThread = new Thread(scheduler);
         schedulerThread.setName("Scheduler");
         schedulerThread.start();
@@ -19,5 +21,9 @@ public class FireIncidentSimulation {
             droneThread.setName("Drone Subsystem " + i);
             droneThread.start();
         }
+
+        new javax.swing.Timer(100, e -> {
+            ui.updateState(scheduler.getDrones(), scheduler.getFireIncidents());
+        }).start();
     }
 }

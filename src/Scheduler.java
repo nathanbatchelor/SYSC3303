@@ -20,7 +20,6 @@ import java.util.*;
 public class Scheduler implements Runnable {
     private final Queue<FireEvent> queue = new LinkedList<>();
     private final Map<Integer, FireIncidentSubsystem> zones = new HashMap<>();
-    private final Set<Integer> droneIds = new HashSet<>();
     private final String zoneFile;
     private final String eventFile;
     private volatile boolean isFinished = false;
@@ -385,9 +384,9 @@ public class Scheduler implements Runnable {
                         Object obj = objStream.readObject();
                         if (obj instanceof List) {
                             List<Object> list = (List<Object>) obj;
-                            if (knownFISMethods.contains(list.get(0))) {
+                            if (knownFISMethods.contains(list.getFirst())) {
                                 System.out.println("Calling invokeMethod for FIS");
-                                invokeMethod((String) list.get(0), list.subList(1, list.size()), true);
+                                invokeMethod((String) list.getFirst(), list.subList(1, list.size()), true);
                                 messageProcessed = true;
                             }
                         }
