@@ -27,6 +27,7 @@ public class DroneSubsystem implements Runnable {
     public boolean arrivalFault = false;
     public boolean nozzleFault = false;
     public boolean packetlFault = false;
+    public MapUI map;
 
     private Timer travelTimer;
     private boolean arrivedAtFireZone = false;
@@ -83,7 +84,7 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
-    public DroneSubsystem(Scheduler scheduler, int idNum, int baseOffsetport) {
+    public DroneSubsystem(Scheduler scheduler, int idNum, int baseOffsetport, MapUI map) {
         try {
             socket = new DatagramSocket(DEFAULT_DRONE_PORT + idNum + baseOffsetport);
             schedulerAddress = InetAddress.getLocalHost();
@@ -96,6 +97,7 @@ public class DroneSubsystem implements Runnable {
         this.scheduler = scheduler;
         this.remainingAgent = capacity;
         this.currentState = DroneState.IDLE;
+        this.map = map;
     }
 
     public void displayState() {
@@ -176,6 +178,7 @@ public class DroneSubsystem implements Runnable {
         // Completed travel to target zone center.
         currentX = destX;
         currentY = destY;
+        //map.updateCell(currentX, currentY, MapUI.CellType.DRONE_OUTBOUND);
         arrivedAtFireZone = true; // Prevent fault
         if (travelTimer != null) {
             travelTimer.cancel();

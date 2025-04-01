@@ -41,6 +41,8 @@ public class Scheduler implements Runnable {
     public boolean nozzleFault = false;
     public boolean packetFault = false;
 
+    public MapUI map;
+
     public static class DroneStatus {
         public String droneId;
         public int x;
@@ -55,14 +57,14 @@ public class Scheduler implements Runnable {
         SHUTTING_DOWN,
     }
 
-    public Scheduler(String zoneFile, String eventFile, int numDrones, int baseOffsetport) {
+    public Scheduler(String zoneFile, String eventFile, int numDrones, int baseOffsetport, MapUI map) {
         this.zoneFile = zoneFile;
         this.eventFile = eventFile;
         int droneBasePort = 6500 + baseOffsetport;
         int fisBasePort = 6100 + baseOffsetport;
         int fisSendPort = 6000 + baseOffsetport;
         int droneSendPort = 6001 + baseOffsetport;
-
+        this.map = map;
         for (int i = 1; i <= numDrones; i++) {
             try {
                 DatagramSocket drone_socket = new DatagramSocket(droneBasePort + i);
@@ -83,6 +85,7 @@ public class Scheduler implements Runnable {
 
     public void readZoneFile(int fisBasePort) {
         try {
+            List<MapUI.Zone> uiZones = new ArrayList<>();
             File file = new File(this.zoneFile);
             System.out.println("Checking path: " + file.getAbsolutePath());
             if (!file.exists()) {
@@ -114,6 +117,7 @@ public class Scheduler implements Runnable {
                         }
                         int x1 = startCoords[0], y1 = startCoords[1];
                         int x2 = endCoords[0], y2 = endCoords[1];
+                        uiZones.add(new MapUI.Zone(zoneId, x1, y1, x2, y2));
                         FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(eventFile, zoneId, x1, y1, x2, y2, 0);
                         zones.put(zoneId, fireIncidentSubsystem);
                         DatagramSocket socket = new DatagramSocket(fisBasePort + zoneId);
@@ -126,6 +130,9 @@ public class Scheduler implements Runnable {
                         System.out.println("Error parsing numbers in line: " + line);
                     }
                 }
+            }
+            if (map != null) {
+                map.setZones(uiZones);
             }
         } catch (IOException e) {
             System.out.println("Error reading file: " + zoneFile);
