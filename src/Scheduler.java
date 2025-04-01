@@ -85,7 +85,7 @@ public class Scheduler implements Runnable {
 
     public void readZoneFile(int fisBasePort) {
         try {
-            List<MapUI.Zone> uiZones = new ArrayList<>();
+            List<Zone> uiZones = new ArrayList<>();
             File file = new File(this.zoneFile);
             System.out.println("Checking path: " + file.getAbsolutePath());
             if (!file.exists()) {
@@ -117,7 +117,7 @@ public class Scheduler implements Runnable {
                         }
                         int x1 = startCoords[0], y1 = startCoords[1];
                         int x2 = endCoords[0], y2 = endCoords[1];
-                        uiZones.add(new MapUI.Zone(zoneId, x1, y1, x2, y2));
+                        uiZones.add(new Zone(zoneId, x1, y1, x2, y2));
                         FireIncidentSubsystem fireIncidentSubsystem = new FireIncidentSubsystem(eventFile, zoneId, x1, y1, x2, y2, 0);
                         zones.put(zoneId, fireIncidentSubsystem);
                         DatagramSocket socket = new DatagramSocket(fisBasePort + zoneId);

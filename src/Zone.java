@@ -1,3 +1,5 @@
+import java.util.List;
+
 public class Zone {
     private final int id;
     private final int x1, x2, y1, y2;
@@ -8,5 +10,12 @@ public class Zone {
         this.y1 = y1;
         this.x2 = x2;
         this.y2 = y2;
+    }
+
+    public int getId() {
+        return id;
+    }
+    public List<List<Integer>> getCoords() {
+        return List.of(List.of(x1, y1), List.of(x2, y2));
     }
 }

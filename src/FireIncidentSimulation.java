@@ -3,8 +3,8 @@ import javax.swing.*;
 public class FireIncidentSimulation {
 
     public static void main(String[] args) {
-        String fireIncidentFile = "src//input//test_event_file_with_faults.csv";
-        String zoneFile = "src//input//test_zone_file.csv";
+        String fireIncidentFile = "SYSC3303/src/input/test_event_file_with_faults.csv";
+        String zoneFile = "SYSC3303/src/input/test_zone_file.csv";
 
         SwingUtilities.invokeLater(() -> {
             MapUI mapUI = new MapUI();
