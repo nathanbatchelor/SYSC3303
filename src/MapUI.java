@@ -4,8 +4,20 @@ import java.util.*;
 import java.util.List;
 
 public class MapUI extends JPanel {
-    private static final int CELL_SIZE = 25;  // 25 pixels per 25 meters
+    private static final int REAL_WIDTH = 2000;  // 2000 meters width
+    private static final int REAL_HEIGHT = 1500; // 1500 meters height
+    private static final int METERS_PER_CELL = 25; // Each cell represents 20m×20m
+    private static final int PIXELS_PER_CELL = 10;  // Each cell is 5×5 pixels
+
+    // Calculate panel dimensions
+    private static final int PANEL_WIDTH = REAL_WIDTH / METERS_PER_CELL * PIXELS_PER_CELL;  // 500 pixels
+    private static final int PANEL_HEIGHT = REAL_HEIGHT / METERS_PER_CELL * PIXELS_PER_CELL; // 375 pixels
+
     private java.util.List<Zone> zones = new ArrayList<>();
+
+    public MapUI() {
+        setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
+    }
 
     public void setZones(java.util.List<Zone> zones) {
         this.zones = zones;
@@ -29,28 +41,40 @@ public class MapUI extends JPanel {
             int x2 = coords.get(1).get(0);
             int y2 = coords.get(1).get(1);
 
-            int gridX = x1 / 25;
-            int gridY = y1 / 25;
-            int gridWidth = (x2 - x1) / 25;
-            int gridHeight = (y2 - y1) / 25;
+            int adjustedY1 = PANEL_HEIGHT - (y1 * PIXELS_PER_CELL / METERS_PER_CELL);
+            int adjustedY2 = PANEL_HEIGHT - (y2 * PIXELS_PER_CELL / METERS_PER_CELL);
+
+            int topY = Math.min(adjustedY1, adjustedY2);
+            int height = Math.abs(adjustedY2 - adjustedY1);
+
+            // Convert to screen coordinates (X axis)
+            int screenX = x1 * PIXELS_PER_CELL / METERS_PER_CELL;
+            int screenWidth = (x2 - x1) * PIXELS_PER_CELL / METERS_PER_CELL;
+
 
             g.setColor(Color.BLUE);
-            g.drawRect(gridX * CELL_SIZE, gridY * CELL_SIZE, gridWidth * CELL_SIZE, gridHeight * CELL_SIZE);
-            g.drawString("Z(" + id + ")", gridX * CELL_SIZE + 3, gridY * CELL_SIZE + 15);
+            g.drawRect(screenX, topY, screenWidth, height);
+            g.drawString("Z(" + id + ")", screenX + 3, topY + 15);
         }
     }
 
     private void drawGrid(Graphics g) {
         g.setColor(new Color(200, 200, 200)); // light gray
 
-        int width = getWidth();
-        int height = getHeight();
+        // Draw regular grid lines
+        for (int x = 0; x <= PANEL_WIDTH; x += PIXELS_PER_CELL) {
+            g.drawLine(x, 0, x, PANEL_HEIGHT);
+        }
+        for (int y = 0; y <= PANEL_HEIGHT; y += PIXELS_PER_CELL) {
+            g.drawLine(0, y, PANEL_WIDTH, y);
+        }
 
-        for (int x = 0; x < width; x += CELL_SIZE) {
-            g.drawLine(x, 0, x, height);
-        }
-        for (int y = 0; y < height; y += CELL_SIZE) {
-            g.drawLine(0, y, width, y);
-        }
+        // Draw emphasized axis lines
+        g.drawLine(100, 100, 100, 100);
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(PANEL_WIDTH, PANEL_HEIGHT);
     }
 }
