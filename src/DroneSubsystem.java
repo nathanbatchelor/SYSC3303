@@ -67,11 +67,12 @@ public class DroneSubsystem implements Runnable {
                     byte[] responseBuffer = new byte[4096]; // increased buffer size
                     DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
                     socket.receive(responsePacket);
+
                     ObjectInputStream inputStream = new ObjectInputStream(
                             new ByteArrayInputStream(responsePacket.getData(), 0, responsePacket.getLength()));
                     Object response = inputStream.readObject();
                     if(response!=null){
-                        System.out.println(String.format("Drone %d recieved response: %s", idNum, response));
+                        System.out.printf("Drone %d recieved response: %s%n", idNum, response);
                     }
                     return response;
                 } catch (IOException | ClassNotFoundException e) {
@@ -129,7 +130,19 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " reached ground station.");
     }
 
+    private FireEvent newEvent;
 
+    private void checkForNewEvent(FireEvent currentFireEvent) {
+        new Thread(() -> {
+            while (true) {
+                FireEvent checkEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
+                if(checkEvent != null && checkEvent.getZoneId() != currentFireEvent.getZoneId()) {
+                    newEvent = checkEvent;
+                    break;
+                }
+            }
+        }).start();
+    }
 
     // This is broken, need to fix
     private FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
@@ -144,6 +157,8 @@ public class DroneSubsystem implements Runnable {
         int startY = currentY;
 
         // divide the travel into one-second increments.
+        checkForNewEvent(targetEvent);
+
         int steps = (int) Math.ceil(fullTravelTime);
         for (int i = 1; i <= steps; i++) {
             double fraction = (double) i / steps;
@@ -158,7 +173,7 @@ public class DroneSubsystem implements Runnable {
             // At each step, check if there is an on-route event.
             // The scheduler returns an event if one is within a predefined threshold.
 
-            FireEvent newEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
+//            FireEvent newEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
 
             // If a new event is found and it is different from the one we’re already targeting...
             if (newEvent != null && newEvent != targetEvent) {
@@ -292,7 +307,7 @@ public class DroneSubsystem implements Runnable {
                         break;
                     }
 
-                    travelToZoneCenter(travelTime, event);
+                    event = travelToZoneCenter(travelTime, event);
                     int waterToDrop = Math.min(event.getLitres(), remainingAgent);
 
                     // HANDLE NOZZLE FAULT

@@ -59,6 +59,9 @@ public class MapUI extends JPanel {
         }
 
         for( FireEvent fireEvent : fireEvents){
+            if (fireEvent == null) {
+                continue;
+            }
             int zoneId = fireEvent.getZoneId();
             Zone zone = zones.get(zoneId-1);
 
