@@ -6,14 +6,15 @@ import java.util.List;
 public class MapUI extends JPanel {
     private static final int REAL_WIDTH = 2000;  // 2000 meters width
     private static final int REAL_HEIGHT = 1500; // 1500 meters height
-    private static final int METERS_PER_CELL = 25; // Each cell represents 20m×20m
-    private static final int PIXELS_PER_CELL = 10;  // Each cell is 5×5 pixels
+    private static final int METERS_PER_CELL = 50; // Each cell represents 25m x 25m
+    private static final int PIXELS_PER_CELL = 20;  // Each cell is 10 x 10 pixels
 
     // Calculate panel dimensions
     private static final int PANEL_WIDTH = REAL_WIDTH / METERS_PER_CELL * PIXELS_PER_CELL;  // 500 pixels
     private static final int PANEL_HEIGHT = REAL_HEIGHT / METERS_PER_CELL * PIXELS_PER_CELL; // 375 pixels
 
     private java.util.List<Zone> zones = new ArrayList<>();
+    private java.util.List<FireEvent> fireEvents = new ArrayList<>();
 
     public MapUI() {
         setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
@@ -21,7 +22,7 @@ public class MapUI extends JPanel {
 
     public void setZones(java.util.List<Zone> zones) {
         this.zones = zones;
-        repaint();
+//        repaint();
     }
 
     @Override
@@ -56,6 +57,55 @@ public class MapUI extends JPanel {
             g.drawRect(screenX, topY, screenWidth, height);
             g.drawString("Z(" + id + ")", screenX + 3, topY + 15);
         }
+
+        for( FireEvent fireEvent : fireEvents){
+            int zoneId = fireEvent.getZoneId();
+            Zone zone = zones.get(zoneId-1);
+
+            List<List<Integer>> coords = zone.getCoords();
+            int x1 = coords.get(0).get(0);
+            int y1 = coords.get(0).get(1);
+            int x2 = coords.get(1).get(0);
+            int y2 = coords.get(1).get(1);
+
+            // Calculate zone center in real-world meters
+
+            int centerX = Math.floorDiv((x1 + x2), 2);
+            int centerY = Math.floorDiv((y1 + y2), 2);
+
+            if (centerX % 2 == 1) {
+                centerX-=METERS_PER_CELL/2;
+            }
+            if (centerY % 2 == 1) {
+                centerY+=METERS_PER_CELL/2;
+            }
+
+            // Convert to screen coordinates
+            int screenX = (centerX * PIXELS_PER_CELL) / METERS_PER_CELL;
+            int screenY = PANEL_HEIGHT - ((centerY * PIXELS_PER_CELL) / METERS_PER_CELL);
+
+            // Fire event should take up 1 whole cell
+            if (fireEvent.getCurrentState() == FireEvent.FireEventState.ACTIVE){
+                g.setColor(Color.RED);
+            }else{
+                g.setColor(Color.GREEN);
+            }
+            g.fillRect(screenX, screenY, PIXELS_PER_CELL, PIXELS_PER_CELL);
+            g.setColor(Color.BLACK);
+            g.drawString(fireEvent.getSeverity().split("")[0], screenX + 5, screenY + 15);
+        }
+    }
+
+    public void drawFireEvents(FireEvent fireEvent) {
+        int index = fireEvent.getZoneId() - 1;
+
+        // Ensure the list is big enough
+        while (fireEvents.size() <= index) {
+            fireEvents.add(null);
+        }
+
+        fireEvents.set(index, fireEvent);
+        repaint();
     }
 
     private void drawGrid(Graphics g) {

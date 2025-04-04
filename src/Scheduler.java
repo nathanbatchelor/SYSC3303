@@ -195,10 +195,12 @@ public class Scheduler implements Runnable {
         String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
         String[] startCoords = zoneCoords[0].split(",");
         String[] endCoords = zoneCoords[1].split(",");
+
         int x1 = Integer.parseInt(startCoords[0].trim());
         int y1 = Integer.parseInt(startCoords[1].trim());
         int x2 = Integer.parseInt(endCoords[0].trim());
         int y2 = Integer.parseInt(endCoords[1].trim());
+
         int centerX = (x1 + x2) / 2;
         int centerY = (y1 + y2) / 2;
         double distance = Math.sqrt(Math.pow(centerX - xDrone, 2) + Math.pow(centerY - yDrone, 2));
@@ -227,6 +229,7 @@ public class Scheduler implements Runnable {
 
     public synchronized FireEvent getNextAssignedEvent(String droneId, int currentX, int currentY) {
         double threshold = 50.0; // meters
+        if (queue.isEmpty()) return null;
         for (FireEvent event : queue) {
             int[] center = calculateZoneCenter(event);
             double distance = Math.sqrt(Math.pow(center[0] - currentX, 2) + Math.pow(center[1] - currentY, 2));
@@ -314,9 +317,11 @@ public class Scheduler implements Runnable {
 
     public synchronized void markFireExtinguished(FireEvent event) {
         System.out.println("\nScheduler: Fire at Zone: " + event.getZoneId() + " Extinguished\n");
+        event.setCurrentState(FireEvent.FireEventState.INACTIVE);
         if (queue.isEmpty()) {
             System.out.println("Scheduler: All fire events have been marked as extinguished. Shutting down.");
             state = SchedulerState.SHUTTING_DOWN;
+            map.drawFireEvents(event);
             isFinished = true;
             notifyAll();
         }
@@ -457,6 +462,9 @@ public class Scheduler implements Runnable {
             case "ADD_FIRE_EVENT": {
                 this.numEvents++;
                 FireEvent event = (FireEvent) params.get(0);
+
+                map.drawFireEvents(event);
+
                 System.out.println("Received event: " + event);
                 addFireEvent(event);
                 if (from) {
@@ -494,6 +502,7 @@ public class Scheduler implements Runnable {
             case "calculateTravelTime": {
                 int x = (Integer) params.get(0);
                 int y = (Integer) params.get(1);
+
                 FireEvent event = (FireEvent) params.get(2);
                 double travelTime = calculateTravelTime(x, y, event);
                 int droneId = (Integer) params.get(params.size() - 1);

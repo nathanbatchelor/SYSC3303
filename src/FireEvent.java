@@ -9,6 +9,12 @@ public class FireEvent implements Serializable {
     private final String severity;
     private int litresNeeded;
     public String fault;
+    private FireEventState currentState = FireEventState.INACTIVE;
+
+    public enum FireEventState {
+        ACTIVE,
+        INACTIVE,
+    }
 
     // New field to hold zone coordinates so that they survive serialization.
     private final String zoneDetails;
@@ -30,6 +36,15 @@ public class FireEvent implements Serializable {
         this.fault = fault;
         // Capture the zone coordinates for later use.
         this.zoneDetails = fireIncidentSubsystem != null ? fireIncidentSubsystem.getZoneCoordinates() : "Unknown";
+        this.currentState = FireEventState.ACTIVE;
+    }
+
+    public FireEventState getCurrentState() {
+        return currentState;
+    }
+
+    public void setCurrentState(FireEventState currentState) {
+        this.currentState = currentState;
     }
 
     // This constructor is retained for backward compatibility if needed.
