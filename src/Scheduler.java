@@ -228,19 +228,21 @@ public class Scheduler implements Runnable {
     }
 
     public synchronized FireEvent getNextAssignedEvent(String droneId, int currentX, int currentY) {
-        double threshold = 50.0; // meters
+        double threshold = 50; // meters
         if (queue.isEmpty()) return null;
         for (FireEvent event : queue) {
             int[] center = calculateZoneCenter(event);
             double distance = Math.sqrt(Math.pow(center[0] - currentX, 2) + Math.pow(center[1] - currentY, 2));
+            System.out.println("This is the distance !!!!!!!!!" + distance);
             if (distance <= threshold) {
+                System.out.println("ARE WE HERE????????" + distance);
                 queue.remove(event);
                 return event;
             }
         }
-        if (!queue.isEmpty()) {
-            return queue.poll();
-        }
+//        if (!queue.isEmpty()) {
+//            return queue.poll();
+//        }
         return null;
     }
 
@@ -303,6 +305,7 @@ public class Scheduler implements Runnable {
         int remainingLiters = event.getLitres();
         if (remainingLiters > 0 && waterDropped > 0) {
             System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " still needs " + remainingLiters + "L.");
+            map.drawFireEvents(event);
             ((LinkedList<FireEvent>) queue).addFirst(event);
             notifyAll();
         } else {

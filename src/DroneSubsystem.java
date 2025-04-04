@@ -130,19 +130,20 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " reached ground station.");
     }
 
-    private FireEvent newEvent;
+    private volatile FireEvent newEvent;
 
-    private void checkForNewEvent(FireEvent currentFireEvent) {
-        new Thread(() -> {
-            while (true) {
-                FireEvent checkEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
-                if(checkEvent != null && checkEvent.getZoneId() != currentFireEvent.getZoneId()) {
-                    newEvent = checkEvent;
-                    break;
-                }
-            }
-        }).start();
-    }
+
+//    private void checkForNewEvent(FireEvent currentFireEvent) {
+//        new Thread(() -> {
+//            while (true) {
+//                FireEvent checkEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
+//                if(checkEvent != null && checkEvent.getZoneId() != currentFireEvent.getZoneId()) {
+//                    newEvent = checkEvent;
+//                    break;
+//                }
+//            }
+//        }).start();
+//    }
 
     // This is broken, need to fix
     private FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
@@ -153,11 +154,16 @@ public class DroneSubsystem implements Runnable {
         int destX = (Integer.parseInt(startCoords[0].trim()) + Integer.parseInt(endCoords[0].trim())) / 2;
         int destY = (Integer.parseInt(startCoords[1].trim()) + Integer.parseInt(endCoords[1].trim())) / 2;
 
+        newEvent = null;
+
         int startX = currentX;
         int startY = currentY;
 
         // divide the travel into one-second increments.
-        checkForNewEvent(targetEvent);
+
+        //checkForNewEvent(targetEvent);
+        System.out.println("Ooppsie we are here :(");
+
 
         int steps = (int) Math.ceil(fullTravelTime);
         for (int i = 1; i <= steps; i++) {
@@ -180,7 +186,9 @@ public class DroneSubsystem implements Runnable {
                 System.out.println(Thread.currentThread().getName() + " found on-route event at zone " + newEvent.getZoneId() +
                         " while en route to zone " + targetEvent.getZoneId() + ". Switching assignment.");
                 // Re-add the original event back to the queue.
-                scheduler.addFireEvent(targetEvent);
+                //scheduler.addFireEvent(targetEvent); //CHEATING!
+                sendRequest("ADD_FIRE_EVENT",targetEvent);
+                System.out.println("Added event back to queue!!!!" + newEvent.getZoneId());
                 return newEvent;
             }
         }
@@ -307,7 +315,15 @@ public class DroneSubsystem implements Runnable {
                         break;
                     }
 
+                    FireEvent oldEvent = event;
+
                     event = travelToZoneCenter(travelTime, event);
+
+                    if(event != oldEvent){
+                        continue;
+                    }
+
+
                     int waterToDrop = Math.min(event.getLitres(), remainingAgent);
 
                     // HANDLE NOZZLE FAULT
