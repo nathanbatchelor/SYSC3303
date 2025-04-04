@@ -28,6 +28,7 @@ public class DroneSubsystem implements Runnable {
     public boolean nozzleFault = false;
     public boolean packetlFault = false;
     public MapUI map;
+    public MetricsLogger logger;
 
     private Timer travelTimer;
     private boolean arrivedAtFireZone = false;
@@ -84,7 +85,7 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
-    public DroneSubsystem(Scheduler scheduler, int idNum, int baseOffsetport, MapUI map) {
+    public DroneSubsystem(Scheduler scheduler, int idNum, int baseOffsetport, MapUI map, MetricsLogger logger) {
         try {
             socket = new DatagramSocket(DEFAULT_DRONE_PORT + idNum + baseOffsetport);
             schedulerAddress = InetAddress.getLocalHost();
@@ -98,6 +99,7 @@ public class DroneSubsystem implements Runnable {
         this.remainingAgent = capacity;
         this.currentState = DroneState.IDLE;
         this.map = map;
+        this.logger = logger;
     }
 
     public void displayState() {
@@ -128,7 +130,19 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " reached ground station.");
     }
 
+    private FireEvent newEvent;
 
+    private void checkForNewEvent(FireEvent currentFireEvent) {
+        new Thread(() -> {
+            while (true) {
+                FireEvent checkEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
+                if(checkEvent != null && checkEvent.getZoneId() != currentFireEvent.getZoneId()) {
+                    newEvent = checkEvent;
+                    break;
+                }
+            }
+        }).start();
+    }
 
     // This is broken, need to fix
     private FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
@@ -151,6 +165,7 @@ public class DroneSubsystem implements Runnable {
 //            }
 //        }
 
+        checkForNewEvent(targetEvent);
         // divide the travel into one-second increments.
         int steps = (int) Math.ceil(fullTravelTime);
         for (int i = 1; i <= steps; i++) {
@@ -164,8 +179,8 @@ public class DroneSubsystem implements Runnable {
             // At each step, check if there is an on-route event.
             // The scheduler returns an event if one is within a predefined threshold.
 
-            FireEvent newEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
-
+            //FireEvent newEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
+            System.out.println(Thread.currentThread().getName() + " Upading position");
             // If a new event is found and it is different from the one we’re already targeting...
             if (newEvent != null && newEvent != targetEvent) {
                 System.out.println(Thread.currentThread().getName() + " found on-route event at zone " + newEvent.getZoneId() +
@@ -210,6 +225,10 @@ public class DroneSubsystem implements Runnable {
         displayState();
         System.out.println("\n" + Thread.currentThread().getName() + " returning to base...\n");
         double distance = (double) sendRequest("calculateDistanceToHomeBase", event);
+
+        logger.logDroneTravel(idNum, distance);
+        logger.logZoneDistance(event.getZoneId(), distance);
+
         sleep((long) ((distance / cruiseSpeed) * 1000));
         System.out.println();
         descend();

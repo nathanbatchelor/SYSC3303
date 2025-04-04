@@ -4,8 +4,12 @@ import java.awt.*;
 public class FireIncidentSimulation {
 
     public static void main(String[] args) {
-        String fireIncidentFile = "SYSC3303/src/input/test_event_file_with_faults.csv";
-        String zoneFile = "SYSC3303/src/input/test_zone_file.csv";
+        String fireIncidentFile = "src//input//test_event_file_with_faults.csv";
+        String zoneFile = "src//input//test_zone_file.csv";
+
+        MetricsLogger logger = new MetricsLogger();
+        logger.markSimulationStart();
+
 
         SwingUtilities.invokeLater(() -> {
             MapUI mapUI = new MapUI();
@@ -38,13 +42,13 @@ public class FireIncidentSimulation {
             frame.setVisible(true);
 
             // Start simulation components
-            Scheduler scheduler = new Scheduler(zoneFile, fireIncidentFile, 5, 0, mapUI);
+            Scheduler scheduler = new Scheduler(zoneFile, fireIncidentFile, 5, 0, mapUI, logger);
             Thread schedulerThread = new Thread(scheduler);
             schedulerThread.setName("Scheduler");
             schedulerThread.start();
 
             for (int i = 1; i <= 2; i++) {
-                DroneSubsystem drone = new DroneSubsystem(scheduler, i, 0, mapUI);
+                DroneSubsystem drone = new DroneSubsystem(scheduler, i, 0, mapUI, logger);
                 Thread droneThread = new Thread(drone);
                 droneThread.setName("Drone Subsystem " + i);
                 droneThread.start();
