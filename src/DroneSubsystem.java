@@ -38,7 +38,8 @@ public class DroneSubsystem implements Runnable {
         IDLE,
         ON_ROUTE,
         DROPPING_AGENT,
-        RETURNING
+        RETURNING,
+        FAULT
     }
 
     // Sends an RPC request as a serialized list: [methodName, param1, param2, …, droneId]
@@ -287,7 +288,7 @@ public class DroneSubsystem implements Runnable {
                 System.out.println("[Drone " + idNum + "] Fault detected: drone did not arrive in time.");
                 sendRequest("handleDroneFault",event,"timeout",idNum);
                 currentState = DroneState.RETURNING;
-
+                map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT);
                 makeDroneIdleAndRecharge(event);
             }
             }
@@ -337,6 +338,7 @@ public class DroneSubsystem implements Runnable {
                     if ("PACKET_LOSS".equalsIgnoreCase(event.getFault())) {
                         System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] PACKET LOSS fault injected - Lost packets in communication. \033[0m");
                         sendRequest("handleDroneFault", event, "packet_loss", idNum);
+                        map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT);
                         packetlFault = true;
                         break;
                     }
@@ -356,6 +358,7 @@ public class DroneSubsystem implements Runnable {
                     if ("NOZZLE".equalsIgnoreCase(event.getFault())) {
                         System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] NOZZLE fault injected — nozzle stuck CLOSED. \033[0m");
                         sendRequest("handleDroneFault", event, "nozzle", idNum); // or whatever your fault method is
+                        map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT);
                         hardFault = true;
                         nozzleFault = true;
                         break;

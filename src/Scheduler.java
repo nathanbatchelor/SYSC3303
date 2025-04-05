@@ -146,6 +146,7 @@ public class Scheduler implements Runnable {
             isLoaded = true;
             state = SchedulerState.WAITING_FOR_DRONE;
             System.out.println("Scheduler: Fire events are loaded. Notifying waiting drones...");
+            // Add a sorting algorithm for the queue
             notifyAll();
         }
     }
