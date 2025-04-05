@@ -131,19 +131,23 @@ public class DroneSubsystem implements Runnable {
     }
 
     private volatile FireEvent newEvent;
+    private boolean doCheck = true;
 
-
-//    private void checkForNewEvent(FireEvent currentFireEvent) {
-//        new Thread(() -> {
-//            while (true) {
-//                FireEvent checkEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
-//                if(checkEvent != null && checkEvent.getZoneId() != currentFireEvent.getZoneId()) {
-//                    newEvent = checkEvent;
-//                    break;
-//                }
-//            }
-//        }).start();
-//    }
+    private void checkForNewEvent(FireEvent currentFireEvent) {
+        doCheck = true;
+        new Thread(() -> {
+            while (true) {
+                if(doCheck){
+                    FireEvent checkEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
+                    if(checkEvent != null && checkEvent.getZoneId() != currentFireEvent.getZoneId()) {
+                        newEvent = checkEvent;
+                        doCheck = false;
+                        break;
+                    }
+                }
+            }
+        }).start();
+    }
 
     // This is broken, need to fix
     private FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
