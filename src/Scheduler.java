@@ -305,7 +305,7 @@ public class Scheduler implements Runnable {
         int remainingLiters = event.getLitres();
         if (remainingLiters > 0 && waterDropped > 0) {
             System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " still needs " + remainingLiters + "L.");
-            map.drawFireEvents(event);
+            //map.drawFireEvents(event);
             ((LinkedList<FireEvent>) queue).addFirst(event);
             notifyAll();
         } else {
@@ -320,11 +320,11 @@ public class Scheduler implements Runnable {
 
     public synchronized void markFireExtinguished(FireEvent event) {
         System.out.println("\nScheduler: Fire at Zone: " + event.getZoneId() + " Extinguished\n");
+        map.drawFireEvents(event);
         event.setCurrentState(FireEvent.FireEventState.INACTIVE);
         if (queue.isEmpty()) {
             System.out.println("Scheduler: All fire events have been marked as extinguished. Shutting down.");
             state = SchedulerState.SHUTTING_DOWN;
-            map.drawFireEvents(event);
             isFinished = true;
             notifyAll();
         }

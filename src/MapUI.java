@@ -108,7 +108,11 @@ public class MapUI extends JPanel {
         }
 
         fireEvents.set(index, fireEvent);
-        repaint();
+        SwingUtilities.invokeLater(() -> {
+            revalidate();
+            repaint();
+        });
+        //repaint();
     }
 
     private void drawGrid(Graphics g) {
