@@ -349,7 +349,7 @@ public class DroneSubsystem implements Runnable {
                         System.out.println("\033[1;30m \033[43m[Drone " + idNum + "] ARRIVAL fault injected — drone will not move toward target.\033[0m");
                         arrivalFault = true;
                         // Drone stays put, timer will go off
-                        sleep((long) (travelTime * 1000 * 2));  // simulate drone doing nothing
+                        sleep((long) (travelTime * 0.15 * 1000));  // simulate drone doing nothing
                     }
                     if(currentState == DroneState.RETURNING) {
                         System.out.println("!!!!!Drone " + idNum + " returning to base.!!!!!");
@@ -385,9 +385,12 @@ public class DroneSubsystem implements Runnable {
                         break;
                     }
 
-
-                    extinguishFire(waterToDrop);
-                    sendRequest("updateFireStatus", event, waterToDrop);
+                    if(!arrivalFault) {
+                        extinguishFire(waterToDrop);
+                        sendRequest("updateFireStatus", event, waterToDrop);
+                    }
+//                    extinguishFire(waterToDrop);
+//                    sendRequest("updateFireStatus", event, waterToDrop);
                     FireEvent lastEvent = event;
 
                     // If the drone runs out of agent, return to base.
@@ -397,8 +400,12 @@ public class DroneSubsystem implements Runnable {
                         break; // Break out of the inner loop.
                     }
 
+                    FireEvent event2 = null;
                     // Request an additional event.
-                    FireEvent event2 = (FireEvent) sendRequest("getAdditionalFireEvent", batteryLife, currentX, currentY);
+                    if(!arrivalFault) {
+                        event2 = (FireEvent) sendRequest("getAdditionalFireEvent", batteryLife, currentX, currentY);
+                    }
+                    //FireEvent event2 = (FireEvent) sendRequest("getAdditionalFireEvent", batteryLife, currentX, currentY);
                     if (event2 == null) {
                         System.out.println("No additional event. Returning to base.");
                         makeDroneIdleAndRecharge(lastEvent);

@@ -46,7 +46,7 @@ public class FireIncidentSimulation {
             schedulerThread.setName("Scheduler");
             schedulerThread.start();
 
-            for (int i = 1; i <= 10; i++) {
+            for (int i = 1; i <= 2; i++) {
                 DroneSubsystem drone = new DroneSubsystem(scheduler, i, 0, mapUI, logger);
                 Thread droneThread = new Thread(drone);
                 droneThread.setName("Drone Subsystem " + i);
