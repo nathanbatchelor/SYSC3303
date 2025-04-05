@@ -42,6 +42,7 @@ public class DroneSubsystem implements Runnable {
         FAULT
     }
 
+
     // Sends an RPC request as a serialized list: [methodName, param1, param2, …, droneId]
     // TODO: MAKE SEPARATE THREAD?
     public Object sendRequest(String methodName, Object... parameters) {
@@ -104,6 +105,7 @@ public class DroneSubsystem implements Runnable {
         this.currentState = DroneState.IDLE;
         this.map = map;
         this.logger = logger;
+        map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE);
     }
 
     public void displayState() {
@@ -188,6 +190,7 @@ public class DroneSubsystem implements Runnable {
             // Update position along the straight line from (startX, startY) to (destX, destY).
             currentX = startX + (int) ((destX - startX) * fraction);
             currentY = startY + (int) ((destY - startY) * fraction);
+            map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE);
             System.out.println("!!!!!!!"+Thread.currentThread().getName() + " traveling to zone center at (" + currentX + ", " + currentY + ")!!!!!!");
 
             sleep(1000);  // simulate one second of travel
@@ -213,7 +216,7 @@ public class DroneSubsystem implements Runnable {
         // Completed travel to target zone center.
         currentX = destX;
         currentY = destY;
-        //map.updateCell(currentX, currentY, MapUI.CellType.DRONE_OUTBOUND);
+        map.updateDronePosition(idNum, currentX, currentY, DroneState.ON_ROUTE);
         arrivedAtFireZone = true; // Prevent fault
         if (travelTimer != null) {
             travelTimer.cancel();
@@ -233,6 +236,7 @@ public class DroneSubsystem implements Runnable {
         sleep(1000);
         batteryLife -= 1;
         currentState = DroneState.DROPPING_AGENT;
+        map.updateDronePosition(idNum, currentX, currentY, currentState);
         displayState();
         int timeToDrop = amount / nozzleFlowRate;
         System.out.println(Thread.currentThread().getName() + " dropping " + amount + "L of firefighting agent at " + nozzleFlowRate + "L/s.");
@@ -252,15 +256,32 @@ public class DroneSubsystem implements Runnable {
         System.out.println("\n" + Thread.currentThread().getName() + " returning to base...\n");
         double distance = (double) sendRequest("calculateDistanceToHomeBase", event);
 
+        int startX = currentX;
+        int startY = currentY;
+        int baseX = 0;
+        int baseY = 0;
+
         logger.logDroneTravel(idNum, distance);
         logger.logZoneDistance(event.getZoneId(), distance);
 
-        sleep((long) ((distance / cruiseSpeed) * 1000));
+        double travelTime = distance / cruiseSpeed;
+        int steps = (int) Math.ceil(travelTime);
+        for (int i = 1; i <= steps; i++) {
+            double fraction = (double) i / steps;
+            currentX = startX + (int) ((baseX - startX) * fraction);
+            currentY = startY + (int) ((baseY - startY) * fraction);
+
+            map.updateDronePosition(idNum, currentX, currentY, DroneState.RETURNING);
+            sleep(1000);
+            batteryLife -= 1;
+        }
+        //sleep((long) ((distance / cruiseSpeed) * 1000));
         System.out.println();
         descend();
         System.out.println("----------------------------------------\n");
         currentX = 0;
         currentY = 0;
+        map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE);
     }
 
     private void makeDroneIdleAndRecharge(FireEvent lastEvent) {

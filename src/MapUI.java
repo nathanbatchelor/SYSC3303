@@ -15,6 +15,12 @@ public class MapUI extends JPanel {
 
     private java.util.List<Zone> zones = new ArrayList<>();
     private java.util.List<FireEvent> fireEvents = new ArrayList<>();
+    private final Map<Integer, DroneInfo> drones = new HashMap<>();
+
+
+    //private int droneX = -1;
+    //private int droneY = -1;
+    //private DroneSubsystem.DroneState droneState = DroneSubsystem.DroneState.IDLE;
 
     public MapUI() {
         setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
@@ -23,6 +29,29 @@ public class MapUI extends JPanel {
     public void setZones(java.util.List<Zone> zones) {
         this.zones = zones;
 //        repaint();
+    }
+
+
+
+    private static class DroneInfo {
+        int x, y;
+        DroneSubsystem.DroneState state;
+
+        public DroneInfo(int x, int y, DroneSubsystem.DroneState state) {
+            this.x = x;
+            this.y = y;
+            this.state = state;
+        }
+    }
+
+    public void updateDronePosition(int droneId, int x, int y, DroneSubsystem.DroneState droneState) {
+        drones.put(droneId, new DroneInfo(x, y+101, droneState));
+        SwingUtilities.invokeLater(() -> {
+            revalidate();
+            repaint();
+        });
+        // here
+        //repaint();
     }
 
     @Override
@@ -91,11 +120,32 @@ public class MapUI extends JPanel {
             if (fireEvent.getCurrentState() == FireEvent.FireEventState.ACTIVE){
                 g.setColor(Color.RED);
             }else{
-                g.setColor(Color.GREEN);
+                g.setColor(new Color(11,69,21));
             }
             g.fillRect(screenX, screenY, PIXELS_PER_CELL, PIXELS_PER_CELL);
             g.setColor(Color.BLACK);
             g.drawString(fireEvent.getSeverity().split("")[0], screenX + 5, screenY + 15);
+        }
+        for (Map.Entry<Integer, DroneInfo> entry : drones.entrySet()) {
+            int id = entry.getKey();
+            DroneInfo drone = entry.getValue();
+
+            int screenX = (drone.x * PIXELS_PER_CELL) / METERS_PER_CELL;
+            int screenY = getHeight() - (drone.y * PIXELS_PER_CELL) / METERS_PER_CELL;
+
+            Color droneColor;
+            switch (drone.state) {
+                case DROPPING_AGENT -> droneColor = new Color(55, 255, 0);
+                case RETURNING -> droneColor = Color.PINK;
+                case IDLE -> droneColor = new Color(0, 247, 255);
+                case FAULT -> droneColor = new Color(84, 4, 177);
+                default -> droneColor = Color.ORANGE;
+            }
+
+            g.setColor(droneColor);
+            g.fillRect(screenX, screenY, PIXELS_PER_CELL, PIXELS_PER_CELL);
+            g.setColor(Color.BLACK);
+            g.drawString("D" + id, screenX + 2, screenY + 15);
         }
     }
 
