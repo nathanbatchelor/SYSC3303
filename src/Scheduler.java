@@ -42,6 +42,7 @@ public class Scheduler implements Runnable {
     public boolean packetFault = false;
 
     public MapUI map;
+    public MetricsLogger logger;
 
     public static class DroneStatus {
         public String droneId;
@@ -57,7 +58,7 @@ public class Scheduler implements Runnable {
         SHUTTING_DOWN,
     }
 
-    public Scheduler(String zoneFile, String eventFile, int numDrones, int baseOffsetport, MapUI map) {
+    public Scheduler(String zoneFile, String eventFile, int numDrones, int baseOffsetport, MapUI map, MetricsLogger logger) {
         this.zoneFile = zoneFile;
         this.eventFile = eventFile;
         int droneBasePort = 6500 + baseOffsetport;
@@ -65,6 +66,7 @@ public class Scheduler implements Runnable {
         int fisSendPort = 6000 + baseOffsetport;
         int droneSendPort = 6001 + baseOffsetport;
         this.map = map;
+        this.logger = logger;
         for (int i = 1; i <= numDrones; i++) {
             try {
                 DatagramSocket drone_socket = new DatagramSocket(droneBasePort + i);
@@ -305,7 +307,7 @@ public class Scheduler implements Runnable {
         int remainingLiters = event.getLitres();
         if (remainingLiters > 0 && waterDropped > 0) {
             System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " still needs " + remainingLiters + "L.");
-            //map.drawFireEvents(event);
+            //yeahmap.drawFireEvents(event);
             ((LinkedList<FireEvent>) queue).addFirst(event);
             notifyAll();
         } else {
@@ -324,6 +326,8 @@ public class Scheduler implements Runnable {
         event.setCurrentState(FireEvent.FireEventState.INACTIVE);
         if (queue.isEmpty()) {
             System.out.println("Scheduler: All fire events have been marked as extinguished. Shutting down.");
+            logger.markSimulationEnd();
+            logger.exportToFile("simulation_metrics.txt");
             state = SchedulerState.SHUTTING_DOWN;
             isFinished = true;
             notifyAll();

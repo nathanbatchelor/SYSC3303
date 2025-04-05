@@ -28,6 +28,8 @@ public class DroneSubsystem implements Runnable {
     public boolean nozzleFault = false;
     public boolean packetlFault = false;
     public MapUI map;
+    public MetricsLogger logger;
+
 
     private Timer travelTimer;
     private boolean arrivedAtFireZone = false;
@@ -86,7 +88,7 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
-    public DroneSubsystem(Scheduler scheduler, int idNum, int baseOffsetport, MapUI map) {
+    public DroneSubsystem(Scheduler scheduler, int idNum, int baseOffsetport, MapUI map, MetricsLogger logger) {
         try {
             socket = new DatagramSocket(DEFAULT_DRONE_PORT + idNum + baseOffsetport);
             schedulerAddress = InetAddress.getLocalHost();
@@ -100,6 +102,7 @@ public class DroneSubsystem implements Runnable {
         this.remainingAgent = capacity;
         this.currentState = DroneState.IDLE;
         this.map = map;
+        this.logger = logger;
     }
 
     public void displayState() {
@@ -247,6 +250,10 @@ public class DroneSubsystem implements Runnable {
         displayState();
         System.out.println("\n" + Thread.currentThread().getName() + " returning to base...\n");
         double distance = (double) sendRequest("calculateDistanceToHomeBase", event);
+
+        logger.logDroneTravel(idNum, distance);
+        logger.logZoneDistance(event.getZoneId(), distance);
+
         sleep((long) ((distance / cruiseSpeed) * 1000));
         System.out.println();
         descend();

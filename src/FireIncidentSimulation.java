@@ -7,6 +7,9 @@ public class FireIncidentSimulation {
         String fireIncidentFile = "src//input//test_event_file_with_faults.csv";
         String zoneFile = "src//input//test_zone_file.csv";
 
+        MetricsLogger logger = new MetricsLogger();
+        logger.markSimulationStart();
+
         SwingUtilities.invokeLater(() -> {
             MapUI mapUI = new MapUI();
             int WIDTH = 1280;
@@ -38,13 +41,13 @@ public class FireIncidentSimulation {
             frame.setVisible(true);
 
             // Start simulation components
-            Scheduler scheduler = new Scheduler(zoneFile, fireIncidentFile, 5, 0, mapUI);
+            Scheduler scheduler = new Scheduler(zoneFile, fireIncidentFile, 5, 0, mapUI, logger);
             Thread schedulerThread = new Thread(scheduler);
             schedulerThread.setName("Scheduler");
             schedulerThread.start();
 
             for (int i = 1; i <= 1; i++) {
-                DroneSubsystem drone = new DroneSubsystem(scheduler, i, 0, mapUI);
+                DroneSubsystem drone = new DroneSubsystem(scheduler, i, 0, mapUI, logger);
                 Thread droneThread = new Thread(drone);
                 droneThread.setName("Drone Subsystem " + i);
                 droneThread.start();
