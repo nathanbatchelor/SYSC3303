@@ -133,20 +133,26 @@ public class DroneSubsystem implements Runnable {
     private volatile FireEvent newEvent;
     private boolean doCheck = true;
 
+    private Thread checkEventThread;
+    private volatile boolean isCheckingForNewEvent = false;
+
     private void checkForNewEvent(FireEvent currentFireEvent) {
-        doCheck = true;
-        new Thread(() -> {
-            while (true) {
-                if(doCheck){
-                    FireEvent checkEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
-                    if(checkEvent != null && checkEvent.getZoneId() != currentFireEvent.getZoneId()) {
-                        newEvent = checkEvent;
-                        doCheck = false;
-                        break;
-                    }
+        isCheckingForNewEvent = true;
+        newEvent = null;
+        checkEventThread = new Thread(() -> {
+            while (isCheckingForNewEvent) {
+                System.out.println("@@@ in the spot I am lookin for @@@");
+                FireEvent checkEvent = (FireEvent) sendRequest("getNextAssignedEvent", Thread.currentThread().getName(), currentX, currentY);
+                if (checkEvent != null && checkEvent.getZoneId() != currentFireEvent.getZoneId()) {
+                    newEvent = checkEvent;
+                    isCheckingForNewEvent = false;
+                    break;
                 }
+                sleep(1000); // avoid flooding UDP
             }
-        }).start();
+        });
+        checkEventThread.setDaemon(true);
+        checkEventThread.start();
     }
 
     // This is broken, need to fix
@@ -165,7 +171,10 @@ public class DroneSubsystem implements Runnable {
 
         // divide the travel into one-second increments.
 
-        //checkForNewEvent(targetEvent);
+        if (!isCheckingForNewEvent) {
+            newEvent = null;
+            checkForNewEvent(targetEvent);
+        }
         System.out.println("Ooppsie we are here :(");
 
 
@@ -205,6 +214,12 @@ public class DroneSubsystem implements Runnable {
         if (travelTimer != null) {
             travelTimer.cancel();
             travelTimer = null;
+        }
+
+        isCheckingForNewEvent = false;
+        if (checkEventThread != null && checkEventThread.isAlive()) {
+            checkEventThread.interrupt();  // optional
+            checkEventThread = null;
         }
         return targetEvent;
     }
@@ -320,7 +335,7 @@ public class DroneSubsystem implements Runnable {
                     }
 
                     FireEvent oldEvent = event;
-
+                    System.out.println("I am here when I shouldnt be :) !!");
                     event = travelToZoneCenter(travelTime, event);
 
                     if(event != oldEvent){
