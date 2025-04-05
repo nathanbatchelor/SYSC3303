@@ -15,9 +15,9 @@ public class DroneSubsystem implements Runnable {
     private final int idNum;
     private double batteryLife = 1800; // Battery Life of Drone
     private int remainingAgent;
-    private int currentX = 0;
-    private int currentY = 0;
-    private DroneState currentState;
+    private volatile int currentX = 0;
+    private volatile int currentY = 0;
+    private volatile DroneState currentState;
     private DatagramSocket socket;
     private InetAddress schedulerAddress;
     private final int DEFAULT_DRONE_PORT = 5500;
@@ -179,7 +179,7 @@ public class DroneSubsystem implements Runnable {
 
         if (!isCheckingForNewEvent) {
             newEvent = null;
-            checkForNewEvent(targetEvent);
+            //checkForNewEvent(targetEvent);
         }
         System.out.println("Ooppsie we are here :(");
 
@@ -229,6 +229,14 @@ public class DroneSubsystem implements Runnable {
             checkEventThread = null;
         }
         return targetEvent;
+    }
+
+    private void stopCheckingForNewEvents() {
+        isCheckingForNewEvent = false;
+        if (checkEventThread != null && checkEventThread.isAlive()) {
+            checkEventThread.interrupt();
+            checkEventThread = null;
+        }
     }
 
     public void extinguishFire(int amount) {
@@ -285,6 +293,7 @@ public class DroneSubsystem implements Runnable {
     }
 
     private void makeDroneIdleAndRecharge(FireEvent lastEvent) {
+        stopCheckingForNewEvents();
         returnToBase(lastEvent);
         currentState = DroneState.IDLE;
         displayState();

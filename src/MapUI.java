@@ -15,8 +15,11 @@ public class MapUI extends JPanel {
 
     private java.util.List<Zone> zones = new ArrayList<>();
     private java.util.List<FireEvent> fireEvents = new ArrayList<>();
-    private final Map<Integer, DroneInfo> drones = new HashMap<>();
+    private final Map<Integer, DroneInfo> drones = new java.util.concurrent.ConcurrentHashMap<>();
 
+
+    private final javax.swing.Timer repaintTimer;
+    private volatile boolean needsRepaint = false;
 
     //private int droneX = -1;
     //private int droneY = -1;
@@ -24,6 +27,13 @@ public class MapUI extends JPanel {
 
     public MapUI() {
         setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
+
+        repaintTimer = new javax.swing.Timer(100, e -> {
+                revalidate();  // Optional
+                repaint();
+                needsRepaint = false;
+        });
+        repaintTimer.start();
     }
 
     public void setZones(java.util.List<Zone> zones) {
@@ -34,8 +44,8 @@ public class MapUI extends JPanel {
 
 
     private static class DroneInfo {
-        int x, y;
-        DroneSubsystem.DroneState state;
+        final int x, y;
+        final DroneSubsystem.DroneState state;
 
         public DroneInfo(int x, int y, DroneSubsystem.DroneState state) {
             this.x = x;
@@ -44,18 +54,19 @@ public class MapUI extends JPanel {
         }
     }
 
-    public void updateDronePosition(int droneId, int x, int y, DroneSubsystem.DroneState droneState) {
+    public synchronized void updateDronePosition(int droneId, int x, int y, DroneSubsystem.DroneState droneState) {
         drones.put(droneId, new DroneInfo(x, y+101, droneState));
-        SwingUtilities.invokeLater(() -> {
-            revalidate();
-            repaint();
-        });
+        System.out.println("$$$$$$ UI update for Drone " + droneId + ": (" + x + "," + y + ") state=" + droneState);
+        //SwingUtilities.invokeLater(() -> {
+          //  revalidate();
+            //repaint();
+        //});
         // here
         //repaint();
     }
 
     @Override
-    protected void paintComponent(Graphics g) {
+    protected synchronized void paintComponent(Graphics g) {
         super.paintComponent(g);
 
         // Draw background grid
