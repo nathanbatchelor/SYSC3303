@@ -454,7 +454,7 @@ public class Scheduler implements Runnable {
      * @param type the type of fault (e.g., "ARRIVAL", "NOZZLE", "PACKET_LOSS")
      * @param idnum the identifier of the drone that experienced the fault
      */
-    public synchronized void handleDroneFault(FireEvent event, String type,int idnum){
+    public synchronized void handleDroneFault(FireEvent event, String type, int idnum){
         if (event.getFault().equals("ARRIVAL")){
             System.out.println("\u001B[33m !!!!Scheduler: handling drone TRAVEL TIMEOUT!!!! \u001B[0m");
             timeoutFault = true;
