@@ -44,6 +44,9 @@ public class Scheduler implements Runnable {
     public MapUI map;
     public MetricsLogger logger;
 
+    private int totalZonesExpected = 0;   // Set dynamically
+    private int zonesFinishedLoading = 0; // Counter
+
     public static class DroneStatus {
         public String droneId;
         public int x;
@@ -99,6 +102,7 @@ public class Scheduler implements Runnable {
                 String line;
                 boolean isFirstLine = true;
                 while ((line = br.readLine()) != null) {
+                    totalZonesExpected++;
                     if (isFirstLine) {
                         isFirstLine = false;
                         continue;
@@ -142,11 +146,18 @@ public class Scheduler implements Runnable {
     }
 
     public synchronized void setEventsLoaded() {
-        if (!isLoaded) {
+        zonesFinishedLoading++;
+        if (zonesFinishedLoading == totalZonesExpected) {
+            // Sort queue by timestamp
+            List<FireEvent> events = new ArrayList<>(queue);
+            events.sort(Comparator.comparing(FireEvent::getTimeAsLocalTime));
+            queue.clear();
+            queue.addAll(events);
+
             isLoaded = true;
             state = SchedulerState.WAITING_FOR_DRONE;
-            System.out.println("Scheduler: Fire events are loaded. Notifying waiting drones...");
-            // Add a sorting algorithm for the queue
+
+            System.out.println("Scheduler: All zones finished. Queue sorted by timestamp. Ready to assign to drones.");
             notifyAll();
         }
     }

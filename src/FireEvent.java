@@ -1,4 +1,7 @@
 import java.io.Serializable;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public class FireEvent implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -51,6 +54,14 @@ public class FireEvent implements Serializable {
         this.fireIncidentSubsystem = null; // Don't carry over transient references
     }
 
+    public LocalTime getTimeAsLocalTime() {
+        try {
+            return LocalTime.parse(this.time, DateTimeFormatter.ofPattern("HH:mm:ss"));
+        } catch (DateTimeParseException e) {
+            System.err.println("Invalid time format in FireEvent: " + this.time);
+            return LocalTime.MIDNIGHT; // fallback
+        }
+    }
 
 
     public FireEventState getCurrentState() {
