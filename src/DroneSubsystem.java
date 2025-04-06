@@ -337,7 +337,7 @@ public class DroneSubsystem implements Runnable {
             // Outer loop: keep checking for new fire events.
             while (true) {
 
-                if ((Boolean)sendRequest("STOP_?", idNum)) break;
+                if ((boolean)sendRequest("STOP_?", idNum))break;
 
                 FireEvent event = (FireEvent) sendRequest("getNextFireEvent");
                 busy = true;
@@ -351,7 +351,7 @@ public class DroneSubsystem implements Runnable {
                     if (currentX == 0 && currentY == 0) {
                         takeoff();
                     }
-                    // TODO: in DroneSubsystem, extract x and y and draw to screen
+
                     double travelTime = (double) sendRequest("calculateTravelTime", currentX, currentY, event);
                     System.out.println("[Drone " + idNum + "] Travel time: " + travelTime);
 

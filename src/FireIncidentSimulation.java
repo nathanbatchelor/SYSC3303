@@ -12,46 +12,45 @@ public class FireIncidentSimulation {
 
         SwingUtilities.invokeLater(() -> {
             MapUI mapUI = new MapUI();
-            int WIDTH = 1280;
-            int HEIGHT = 720;
+            DroneStatusPanel statusPanel = new DroneStatusPanel();
+            LegendPanel legendPanel = new LegendPanel();
 
-            int PADDING = 20;
+            mapUI.setStatusPanel(statusPanel);
 
-            // Create a window and add the map panel
             JFrame frame = new JFrame("Fire Incident Map");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+            // === RIGHT PANEL (VERTICAL STACK: StatusPanel + LegendPanel) ===
+            JPanel rightPanel = new JPanel();
+            rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+            rightPanel.setPreferredSize(new Dimension(250, 720));
+            rightPanel.add(statusPanel);
+            rightPanel.add(Box.createVerticalStrut(10)); // space between
+            rightPanel.add(legendPanel);
+
+            // === MAIN LAYOUT ===
             JPanel contentPanel = new JPanel(new BorderLayout());
-            contentPanel.setBorder(BorderFactory.createEmptyBorder(PADDING, PADDING, PADDING, PADDING));
-
-            // Add the map to the content panel
+            contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
             contentPanel.add(mapUI, BorderLayout.CENTER);
+            contentPanel.add(rightPanel, BorderLayout.EAST);
 
-            // Add the content panel to the frame
+            // === FINALIZE ===
             frame.setContentPane(contentPanel);
-
-            // Pack and set size (adjust to include padding)
             frame.pack();
-            Insets insets = frame.getInsets();
-//            frame.setSize(WIDTH + insets.right + insets.left + (PADDING * 2),
-//                    HEIGHT + insets.top + insets.bottom + (PADDING * 2));
-            frame.setSize(WIDTH,HEIGHT);
-
-            frame.setResizable(false);
+            frame.setSize(1600, 900);
             frame.setVisible(true);
 
-            // Start simulation components
+            // === SIMULATION ===
             Scheduler scheduler = new Scheduler(zoneFile, fireIncidentFile, 5, 0, mapUI, logger);
-            Thread schedulerThread = new Thread(scheduler);
-            schedulerThread.setName("Scheduler");
+            Thread schedulerThread = new Thread(scheduler, "Scheduler");
             schedulerThread.start();
 
             for (int i = 1; i <= 2; i++) {
                 DroneSubsystem drone = new DroneSubsystem(scheduler, i, 0, mapUI, logger);
-                Thread droneThread = new Thread(drone);
-                droneThread.setName("Drone Subsystem " + i);
-                droneThread.start();
+                new Thread(drone, "Drone Subsystem " + i).start();
             }
         });
+
     }
+
 }
