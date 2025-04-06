@@ -72,12 +72,17 @@ public class MapUI extends JPanel {
         }
     }
 
-    public synchronized void updateDronePosition(int droneId, int x, int y, DroneSubsystem.DroneState droneState) {
+    public synchronized void updateDronePosition(int droneId, int x, int y, DroneSubsystem.DroneState droneState, int remainingAgent, double batteryLife) {
         drones.put(droneId, new DroneInfo(x, y, droneState));
         if (statusPanel != null) {
             // Add dummy/default values for battery/agent unless you pass those in too
-            statusPanel.updateDroneStatus(droneId, x, y, droneState, 0, 0);
+            statusPanel.updateDroneStatus(droneId, x, y, droneState, remainingAgent, batteryLife);
         }
+    }
+
+    // Overloaded method for backward compatibility:
+    public synchronized void updateDronePosition(int droneId, int x, int y, DroneSubsystem.DroneState droneState) {
+        updateDronePosition(droneId, x, y, droneState, 0, 0);
     }
 
     @Override

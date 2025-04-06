@@ -105,7 +105,7 @@ public class DroneSubsystem implements Runnable {
         this.currentState = DroneState.IDLE;
         this.map = map;
         this.logger = logger;
-        map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE);
+        map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE, remainingAgent, batteryLife);
     }
 
     public void displayState() {
@@ -192,7 +192,7 @@ public class DroneSubsystem implements Runnable {
 //            currentX = startX + (int) ((destX - startX) * fraction);
 //            currentY = startY + (int) ((destY - startY) * fraction);
             //System.out.println(idNum + "Is travelling to the zone at these coords !!!" + currentX + " " + currentY);
-            map.updateDronePosition(idNum, currentX, currentY, DroneState.ON_ROUTE);
+            map.updateDronePosition(idNum, currentX, currentY, DroneState.ON_ROUTE,remainingAgent, batteryLife);
 
             sleep(1000);  // simulate one second of travel
             batteryLife -= 1; // decrement battery by 1 second
@@ -216,7 +216,7 @@ public class DroneSubsystem implements Runnable {
         // Completed travel to target zone center.
         currentX = destX;
         currentY = destY;
-        map.updateDronePosition(idNum, currentX, currentY, DroneState.ON_ROUTE);
+        map.updateDronePosition(idNum, currentX, currentY, DroneState.ON_ROUTE,remainingAgent, batteryLife);
         arrivedAtFireZone = true; // Prevent fault
         if (travelTimer != null) {
             travelTimer.cancel();
@@ -244,7 +244,7 @@ public class DroneSubsystem implements Runnable {
         sleep(1000);
         batteryLife -= 1;
         currentState = DroneState.DROPPING_AGENT;
-        map.updateDronePosition(idNum, currentX, currentY, currentState);
+        map.updateDronePosition(idNum, currentX, currentY, currentState,remainingAgent, batteryLife);
         displayState();
         int timeToDrop = amount / nozzleFlowRate;
         System.out.println(Thread.currentThread().getName() + " dropping " + amount + "L of firefighting agent at " + nozzleFlowRate + "L/s.");
@@ -283,7 +283,7 @@ public class DroneSubsystem implements Runnable {
 //            currentX = startX + (int) ((baseX - startX) * fraction);
 //            currentY = startY + (int) ((baseY - startY) * fraction);
 //            System.out.println(idNum + "$$$ Is returning from the zone at these coords !!!" + currentX + " " + currentY);
-            map.updateDronePosition(idNum, currentX, currentY, DroneState.RETURNING);
+            map.updateDronePosition(idNum, currentX, currentY, DroneState.RETURNING,remainingAgent, batteryLife);
             sleep(1000);
             batteryLife -= 1;
         }
@@ -293,7 +293,7 @@ public class DroneSubsystem implements Runnable {
         System.out.println("----------------------------------------\n");
         currentX = 0;
         currentY = 0;
-        map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE);
+        map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE,remainingAgent, batteryLife);
     }
 
     private void makeDroneIdleAndRecharge(FireEvent lastEvent) {
@@ -322,7 +322,7 @@ public class DroneSubsystem implements Runnable {
                 System.out.println("[Drone " + idNum + "] Fault detected: drone did not arrive in time.");
                 sendRequest("handleDroneFault",event,"timeout",idNum);
                 currentState = DroneState.RETURNING;
-                map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT);
+                map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT,remainingAgent, batteryLife);
                 makeDroneIdleAndRecharge(event);
             }
             }
@@ -372,7 +372,7 @@ public class DroneSubsystem implements Runnable {
                     if ("PACKET_LOSS".equalsIgnoreCase(event.getFault())) {
                         System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] PACKET LOSS fault injected - Lost packets in communication. \033[0m");
                         sendRequest("handleDroneFault", event, "packet_loss", idNum);
-                        map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT);
+                        map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT,remainingAgent, batteryLife);
                         packetlFault = true;
                         break;
                     }
@@ -392,7 +392,7 @@ public class DroneSubsystem implements Runnable {
                     if ("NOZZLE".equalsIgnoreCase(event.getFault())) {
                         System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] NOZZLE fault injected — nozzle stuck CLOSED. \033[0m");
                         sendRequest("handleDroneFault", event, "nozzle", idNum); // or whatever your fault method is
-                        map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT);
+                        map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT,remainingAgent, batteryLife);
                         hardFault = true;
                         nozzleFault = true;
                         break;
