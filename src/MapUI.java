@@ -275,7 +275,7 @@ public class MapUI extends JPanel {
             DroneInfo drone = entry.getValue();
 
             int screenX = (drone.x * PIXELS_PER_CELL) / METERS_PER_CELL;
-            int screenY = getHeight() - ((drone.y + 1) * PIXELS_PER_CELL) / METERS_PER_CELL;  // bottom-left aligned!
+            int screenY = getHeight() - ((drone.y * PIXELS_PER_CELL) / METERS_PER_CELL) - PIXELS_PER_CELL;
 
             // Choose drone color based on state
             Color droneColor;
