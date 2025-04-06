@@ -160,6 +160,8 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " descending to base...");
         sleep((long) (5000 * takeoffSpeed));
         System.out.println(Thread.currentThread().getName() + " reached ground station.");
+        currentState = DroneState.IDLE;
+
     }
 
     private volatile FireEvent newEvent;
@@ -229,6 +231,7 @@ public class DroneSubsystem implements Runnable {
         }
 
         int steps = (int) Math.ceil(fullTravelTime);
+        currentState = DroneState.ON_ROUTE;
         for (int i = 1; i <= steps; i++) {
             double fraction = (double) i / steps;
             // Update position along the straight line from (startX, startY) to (destX, destY).
@@ -345,13 +348,14 @@ public class DroneSubsystem implements Runnable {
 //            currentX = startX + (int) ((baseX - startX) * fraction);
 //            currentY = startY + (int) ((baseY - startY) * fraction);
 //            System.out.println(idNum + "$$$ Is returning from the zone at these coords !!!" + currentX + " " + currentY);
-            map.updateDronePosition(idNum, currentX, currentY, DroneState.RETURNING,remainingAgent, batteryLife);
+            map.updateDronePosition(idNum, currentX, currentY, currentState,remainingAgent, batteryLife);
             sleep(1000);
             batteryLife -= 1;
         }
         //sleep((long) ((distance / cruiseSpeed) * 1000));
         System.out.println();
         descend();
+        currentState = DroneState.IDLE;
         System.out.println("----------------------------------------\n");
         currentX = 0;
         currentY = 0;
@@ -370,6 +374,7 @@ public class DroneSubsystem implements Runnable {
         displayState();
         remainingAgent = capacity;
         batteryLife = 1800;
+        map.updateDronePosition(idNum, currentX, currentY, currentState, remainingAgent, batteryLife);
     }
 
     /**
@@ -400,7 +405,7 @@ public class DroneSubsystem implements Runnable {
             if (!arrivedAtFireZone) {
                 System.out.println("[Drone " + idNum + "] Fault detected: drone did not arrive in time.");
                 sendRequest("handleDroneFault",event,"timeout",idNum);
-                currentState = DroneState.RETURNING;
+                //currentState = DroneState.FAULT;
                 map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT,remainingAgent, batteryLife);
                 arrivalFault = false;
                 makeDroneIdleAndRecharge(event);
@@ -512,7 +517,10 @@ public class DroneSubsystem implements Runnable {
                     }
                 } // end inner loop
 
-                if(hardFault) break;
+                if(hardFault) {
+                    //returnToBase(event);
+                    break;
+                }
                 // After finishing an event sequence, check again for a new event.
             } // end outer loop
         } catch (Exception e) {

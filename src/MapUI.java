@@ -111,6 +111,8 @@ public class MapUI extends JPanel {
         }
     }
 
+
+
     /**
      * Overloaded method to update the drone position using default values for remaining agent and battery life.
      *

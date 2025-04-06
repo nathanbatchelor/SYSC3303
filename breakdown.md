@@ -1,19 +1,14 @@
-# Breakdown of Responsibilities: Iteration 2
+# Breakdown of Responsibilities: Iteration 5
 ## Group 1
 
 
-# Classes
-## Scheduler.java
-Authors: Joey Andrews & Grant Phillips
-## FireIncidentSubsystem.java
-Authors: Anique Ali, Jasjot Gill,
-## DroneSubsystem.java
-Authors: Joey Andrews, Grant Phillips, Jasjot Gill
-## FireEvent.java
-Author: Joey Andrews
-
+# Code
+## GUI
+Authors: Grant Phillips, Joey Andrews, Nathan Batchelor, Jasjot Gill
+## General Bug Fixes and Improvments
+Authors: Grant Phillips, Joey Andrews 
 # Tests 
-Author: Nathan Batchelor
+Author: Jasjot Gill, Anique Ali
 
 # UML Diagrams
 ## UML Class Diagram

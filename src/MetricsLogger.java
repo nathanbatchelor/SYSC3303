@@ -115,7 +115,7 @@ public class MetricsLogger {
     /**
      * Exports the collected metrics to a file.
      *
-     * @param filename the name of the file to which metrics are written
+     * @param filename the name of the file to which metrics are written to.
      */
     public void exportToFile(String filename) {
         try (FileWriter writer = new FileWriter(filename)) {
