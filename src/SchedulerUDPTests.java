@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import java.io.*;
@@ -7,13 +8,15 @@ import java.net.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-public class DroneTest {
+public class SchedulerUDPTests {
 
     private static Scheduler scheduler;
-    private static int port = 5500;
-    private static int idnum;
+    private static FireIncidentSubsystem fis;
+    private static int dronePort = 5500;
+    private static int fisPort = 5000;
     private static InetAddress localhost;
-    private static DatagramSocket socket;
+    private static DatagramSocket droneSocket;
+    private static DatagramSocket fisSocket;
 
     @BeforeAll
     public static void setUpOnce() throws UnknownHostException, SocketException {
@@ -23,13 +26,18 @@ public class DroneTest {
         String zoneFile = "src//input//test_zone_file.csv";
         scheduler = new Scheduler(zoneFile, fireIncidentFile, 2, 200, mapUI, logger);
         localhost = InetAddress.getLocalHost();
-        socket = new DatagramSocket(port);
+        droneSocket = new DatagramSocket(dronePort);
+        fisSocket = new DatagramSocket(fisPort);
+        fis = new FireIncidentSubsystem("test.csv", 0, 0, 0, 10, 10, 200);
     }
 
     @AfterAll
     public static void cleanup() {
-        if (socket != null && !socket.isClosed()) {
-            socket.close();
+        if (droneSocket != null && !droneSocket.isClosed()) {
+            droneSocket.close();
+        }
+        if (fisSocket != null && !fisSocket.isClosed()) {
+            fisSocket.close();
         }
     }
 
@@ -37,12 +45,32 @@ public class DroneTest {
     public void testDroneRPCSend()  {
         try {
             String response = "TEST";
-            InetAddress address = InetAddress.getLocalHost();
             scheduler.droneRPCSend(response, 0);
 
             byte[] buffer = new byte[4096];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            socket.receive(packet);
+            droneSocket.receive(packet);
+
+            // Obtain the data from the packet
+            ObjectInputStream objectInputStream = new ObjectInputStream(new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
+            Object data = objectInputStream.readObject();
+
+            assertEquals("TEST", data);
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    @Test
+    public void testFISRPCSend()  {
+        try {
+            String response = "TEST";
+            scheduler.FISRPCSend(response, 0);
+
+            byte[] buffer = new byte[4096];
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+            fisSocket.receive(packet);
 
             // Obtain the data from the packet
             ObjectInputStream objectInputStream = new ObjectInputStream(new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
