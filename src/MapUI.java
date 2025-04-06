@@ -296,6 +296,7 @@ public class MapUI extends JPanel {
             g.setColor(Color.BLACK);
             g.setStroke(new BasicStroke(0.8f));
             g.drawRect(screenX, screenY, PIXELS_PER_CELL, PIXELS_PER_CELL);
+            //g.drawRect(,0,PIXELS_PER_CELL,PIXELS_PER_CELL);
             g.setStroke(new BasicStroke(1.0f)); // reset
 
             // Label
