@@ -54,6 +54,9 @@ public class Scheduler implements Runnable {
         public double batteryLife;
     }
 
+    /**
+     * Enumeration representing the possible states of the Scheduler.
+     */
     public enum SchedulerState {
         WAITING_FOR_EVENTS,
         ASSIGNING_DRONE,
@@ -61,6 +64,16 @@ public class Scheduler implements Runnable {
         SHUTTING_DOWN,
     }
 
+    /**
+     * Constructs a new Scheduler.
+     *
+     * @param zoneFile the file path containing zone definitions
+     * @param eventFile the file path containing fire events
+     * @param numDrones the number of drones available for the simulation
+     * @param baseOffsetport the offset to avoid port conflicts
+     * @param map the MapUI instance for visual updates
+     * @param logger the MetricsLogger instance for recording metrics
+     */
     public Scheduler(String zoneFile, String eventFile, int numDrones, int baseOffsetport, MapUI map, MetricsLogger logger) {
         this.zoneFile = zoneFile;
         this.eventFile = eventFile;
@@ -88,6 +101,11 @@ public class Scheduler implements Runnable {
         readZoneFile(fisBasePort);
     }
 
+    /**
+     * Reads the zone file to initialize zones and start corresponding FireIncidentSubsystem threads.
+     *
+     * @param fisBasePort the base port number for Fire Incident Subsystems
+     */
     public void readZoneFile(int fisBasePort) {
         try {
             List<Zone> uiZones = new ArrayList<>();
@@ -145,6 +163,10 @@ public class Scheduler implements Runnable {
         }
     }
 
+    /**
+     * Marks that events have been loaded once all zones have finished loading.
+     * Sorts the event queue by timestamp.
+     */
     public synchronized void setEventsLoaded() {
         zonesFinishedLoading++;
         if (zonesFinishedLoading == totalZonesExpected) {
@@ -162,6 +184,13 @@ public class Scheduler implements Runnable {
         }
     }
 
+    /**
+     * Parses a coordinate string into an integer array.
+     *
+     * @param coordinate the coordinate string (e.g., "(x;y)")
+     * @return an array containing the x and y values, or null if parsing fails
+     */
+
     private int[] parseCoordinates(String coordinate) {
         coordinate = coordinate.replaceAll("[()]", "");
         String[] parts = coordinate.split(";");
@@ -175,6 +204,9 @@ public class Scheduler implements Runnable {
         }
     }
 
+    /**
+     * Causes the scheduler to wait until fire events have been loaded.
+     */
     public synchronized void waitForEvents() {
         while (!isLoaded) {
             try {
@@ -186,6 +218,12 @@ public class Scheduler implements Runnable {
         }
     }
 
+    /**
+     * Adds a fire event to the scheduler's event queue.
+     * Also calculates the required amount of firefighting agent for the event.
+     *
+     * @param event the FireEvent to add
+     */
     public synchronized void addFireEvent(FireEvent event) {
         int totalWaterNeeded = calculateWaterNeeded(event.getSeverity());
         event.setLitres(totalWaterNeeded);
@@ -194,6 +232,12 @@ public class Scheduler implements Runnable {
         System.out.println("Scheduler: Added FireEvent → " + event);
     }
 
+    /**
+     * Calculates the amount of firefighting agent needed based on event severity.
+     *
+     * @param severity the severity of the fire event (e.g., low, moderate, high)
+     * @return the required amount of agent in liters
+     */
     private int calculateWaterNeeded(String severity) {
         return switch (severity.toLowerCase()) {
             case "low" -> 10;
@@ -203,6 +247,14 @@ public class Scheduler implements Runnable {
         };
     }
 
+    /**
+     * Calculates the travel time from a drone's current position to the fire event.
+     *
+     * @param xDrone the drone's current x-coordinate
+     * @param yDrone the drone's current y-coordinate
+     * @param event the target fire event
+     * @return the estimated travel time in seconds
+     */
     public double calculateTravelTime(int xDrone, int yDrone, FireEvent event) {
         int cruiseSpeed = 18;
         System.out.println("Calculating travel time");
@@ -223,6 +275,12 @@ public class Scheduler implements Runnable {
         return travelTimeToFire;
     }
 
+    /**
+     * Calculates the distance from the fire event's zone center to the home base (assumed at 0,0).
+     *
+     * @param event the fire event
+     * @return the distance to home base in meters
+     */
     public double calculateDistanceToHomeBase(FireEvent event) {
         int homeBaseX = 0;
         int homeBaseY = 0;
@@ -241,6 +299,14 @@ public class Scheduler implements Runnable {
         return distanceToHomeBase;
     }
 
+    /**
+     * Returns the next fire event that is within a specified threshold of the drone's current position.
+     *
+     * @param droneId the identifier of the drone (as a String)
+     * @param currentX the drone's current x-coordinate
+     * @param currentY the drone's current y-coordinate
+     * @return a FireEvent within range, or null if none is found
+     */
     public synchronized FireEvent getNextAssignedEvent(String droneId, int currentX, int currentY) {
         double threshold = 50; // meters
         if (queue.isEmpty()) return null;
@@ -258,6 +324,12 @@ public class Scheduler implements Runnable {
         return null;
     }
 
+    /**
+     * Calculates the center coordinates of a fire event's zone.
+     *
+     * @param event the fire event
+     * @return an array containing the x and y coordinates of the zone center
+     */
     private int[] calculateZoneCenter(FireEvent event) {
         String[] zoneCoords = event.getZoneDetails().replaceAll("[()]", "").split(" to ");
         String[] startCoords = zoneCoords[0].split(",");
@@ -267,6 +339,12 @@ public class Scheduler implements Runnable {
         return new int[]{centerX, centerY};
     }
 
+    /**
+     * Retrieves the next fire event from the queue.
+     * If no events remain and the simulation is finished, it signals drones to stop.
+     *
+     * @return the next FireEvent, or null if finished
+     */
     public synchronized FireEvent getNextFireEvent() {
         while(completedEvents == numEvents){
             if (isFinished) {
@@ -299,6 +377,14 @@ public class Scheduler implements Runnable {
         return event;
     }
 
+    /**
+     * Retrieves an additional fire event for a drone based on battery life and current position.
+     *
+     * @param batteryLife the remaining battery life of the drone
+     * @param x the drone's current x-coordinate
+     * @param y the drone's current y-coordinate
+     * @return a suitable FireEvent, or null if none is found
+     */
     public synchronized FireEvent getAdditionalFireEvent(double batteryLife, int x, int y) {
         for (FireEvent currentEvent : queue) {
             double range = calculateTravelTime(x, y, currentEvent);
@@ -312,6 +398,13 @@ public class Scheduler implements Runnable {
         return null;
     }
 
+    /**
+     * Updates the fire event's status based on the amount of firefighting agent dropped.
+     * If the event still requires more agent, it is re-added to the queue.
+     *
+     * @param event the fire event to update
+     * @param waterDropped the amount of agent dropped in liters
+     */
     public synchronized void updateFireStatus(FireEvent event, int waterDropped) {
         event.removeLitres(waterDropped);
         int remainingLiters = event.getLitres();
@@ -326,10 +419,20 @@ public class Scheduler implements Runnable {
         }
     }
 
+    /**
+     * Returns the map of zones (fire incident subsystems) managed by the scheduler.
+     *
+     * @return a Map with zone IDs as keys and FireIncidentSubsystem instances as values
+     */
     public Map<Integer, FireIncidentSubsystem> getZones() {
         return zones;
     }
 
+    /**
+     * Marks a fire event as extinguished, updates the map display, and logs the event.
+     *
+     * @param event the fire event to mark as extinguished
+     */
     public synchronized void markFireExtinguished(FireEvent event) {
         System.out.println("\nScheduler: Fire at Zone: " + event.getZoneId() + " Extinguished\n");
         map.drawFireEvents(event);
@@ -344,6 +447,13 @@ public class Scheduler implements Runnable {
         }
     }
 
+    /**
+     * Handles a drone fault by re-adding the corresponding fire event to the queue.
+     *
+     * @param event the fire event related to the fault
+     * @param type the type of fault (e.g., "ARRIVAL", "NOZZLE", "PACKET_LOSS")
+     * @param idnum the identifier of the drone that experienced the fault
+     */
     public synchronized void handleDroneFault(FireEvent event, String type,int idnum){
         if (event.getFault().equals("ARRIVAL")){
             System.out.println("\u001B[33m !!!!Scheduler: handling drone TRAVEL TIMEOUT!!!! \u001B[0m");
@@ -361,23 +471,47 @@ public class Scheduler implements Runnable {
         ((LinkedList<FireEvent>) queue).addFirst(clone);
     }
 
+    /**
+     * Removes a specific fire event from the event queue.
+     *
+     * @param event the fire event to remove
+     */
     public synchronized void removeFireEvent(FireEvent event) {
         queue.remove(event);
     }
 
+    /**
+     * Edits a fire event by reducing the required amount of firefighting agent.
+     *
+     * @param event the fire event to edit
+     * @param litres the amount of agent to remove
+     */
     public synchronized void editFireEvent(FireEvent event, int litres) {
         event.removeLitres(litres);
     }
 
+    /**
+     * Signals the scheduler to finish processing events.
+     */
     public synchronized void finish() {
         isFinished = true;
         notifyAll();
     }
 
+    /**
+     * Checks if the scheduler has finished processing all fire events.
+     *
+     * @return true if finished; false otherwise
+     */
     public synchronized boolean isFinished() {
         return isFinished;
     }
 
+    /**
+     * Checks if fire events have been loaded.
+     *
+     * @return true if events are loaded; false otherwise
+     */
     public synchronized boolean isEventsLoaded() {
         return isLoaded;
     }

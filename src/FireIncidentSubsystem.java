@@ -2,6 +2,12 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+/**
+ * FireIncidentSubsystem represents a subsystem responsible for handling fire events
+ * for a specific zone. It reads fire events from a file, listens for incoming UDP requests,
+ * and communicates with the Scheduler to add new fire events.
+ * Implements Runnable to allow concurrent execution.
+ */
 public class FireIncidentSubsystem implements Runnable {
     public static final int DEFAULT_FIS_PORT = 5000;
     public static final int DEFAULT_SCHEDULER_PORT = 6100;
@@ -16,6 +22,18 @@ public class FireIncidentSubsystem implements Runnable {
     private String eventFile;
     private int numEvents;
 
+    /**
+     * Constructs a new FireIncidentSubsystem.
+     *
+     * @param eventFile the file path containing fire events
+     * @param zoneId the identifier of the zone for which this subsystem is responsible
+     * @param x1 the x-coordinate of the zone's starting point
+     * @param y1 the y-coordinate of the zone's starting point
+     * @param x2 the x-coordinate of the zone's ending point
+     * @param y2 the y-coordinate of the zone's ending point
+     * @param baseOffsetport an offset to avoid port conflicts
+     * @throws UnknownHostException if the local host address cannot be determined
+     */
     public FireIncidentSubsystem(String eventFile, int zoneId,
                                  int x1, int y1, int x2, int y2, int baseOffsetport) throws UnknownHostException {
         this.schedulerAddress = InetAddress.getLocalHost();
@@ -36,6 +54,10 @@ public class FireIncidentSubsystem implements Runnable {
         }
     }
 
+    /**
+     * UDPListener is a private inner class that continuously listens for UDP packets.
+     * When a packet is received, it processes the packet.
+     */
     private class UDPListener implements Runnable {
         @Override
         public void run() {
@@ -60,6 +82,12 @@ public class FireIncidentSubsystem implements Runnable {
         }
     }
 
+    /**
+     * Processes the event file for this zone by reading each line,
+     * parsing it into a FireEvent, and sending it to the Scheduler.
+     *
+     * @param eventFile the path to the event file
+     */
     public void processEventFile(String eventFile) {
         boolean eventsAdded = false;
         System.out.println("Processing event file for Zone " + zoneId);
@@ -100,6 +128,12 @@ public class FireIncidentSubsystem implements Runnable {
         }
     }
 
+    /**
+     * Parses a line from the event file into a FireEvent object.
+     *
+     * @param line a line from the event file containing event details
+     * @return a FireEvent instance representing the parsed event
+     */
     private FireEvent parseEvent(String line) {
         String[] slices = line.split(",");
         String time = slices[0];
@@ -120,6 +154,13 @@ public class FireIncidentSubsystem implements Runnable {
         udpListenerThread.start();
     }
 
+    /**
+     * Processes an incoming UDP packet by reading its content, sending an ACK,
+     * and printing the request details.
+     *
+     * @param packet the received DatagramPacket
+     * @throws IOException if an I/O error occurs while processing the packet
+     */
     private void processUDPPacket(DatagramPacket packet) throws IOException {
         ObjectInputStream inputStream = new ObjectInputStream(
                 new ByteArrayInputStream(packet.getData(), 0, packet.getLength()));
@@ -136,6 +177,14 @@ public class FireIncidentSubsystem implements Runnable {
         }
     }
 
+    /**
+     * Sends a response back to a client via UDP.
+     *
+     * @param response the response object to send
+     * @param address the destination IP address
+     * @param port the destination port
+     * @throws IOException if an I/O error occurs while sending the response
+     */
     private void sendResponse(Object response, InetAddress address, int port) throws IOException {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         ObjectOutputStream objStream = new ObjectOutputStream(byteStream);
@@ -148,7 +197,14 @@ public class FireIncidentSubsystem implements Runnable {
                 " (to " + address + ":" + port + ")");
     }
 
-    // Sends an RPC request (as a serialized object) and waits for a response
+    /**
+     * Sends an RPC request as a serialized object to the Scheduler and waits for an ACK.
+     *
+     * @param request the request object to send
+     * @param hostAddress the Scheduler's IP address
+     * @param hostPort the Scheduler's port
+     * @return the ACK response received from the Scheduler, or an error message if unsuccessful
+     */
     private Object rpc_send(Object request, InetAddress hostAddress, int hostPort) {
         // Check if the socket is closed
         if (socket == null || socket.isClosed()) {

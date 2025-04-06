@@ -19,12 +19,24 @@ public class DroneStatusPanel extends JPanel {
 
     private final Timer refreshTimer;
 
+    /**
+     * Internal class representing the status of a single drone.
+     */
     private static class DroneStatus {
         final int x, y;
         final DroneSubsystem.DroneState state;
         final int remainingAgent;
         final double batteryLife;
 
+        /**
+         * Constructs a new DroneStatus.
+         *
+         * @param x the x-coordinate of the drone
+         * @param y the y-coordinate of the drone
+         * @param state the current state of the drone
+         * @param remainingAgent the remaining firefighting agent (in liters)
+         * @param batteryLife the remaining battery life in seconds
+         */
         public DroneStatus(int x, int y, DroneSubsystem.DroneState state, int remainingAgent, double batteryLife) {
             this.x = x;
             this.y = y;
@@ -34,6 +46,9 @@ public class DroneStatusPanel extends JPanel {
         }
     }
 
+    /**
+     * Constructs a new DroneStatusPanel.
+     */
     public DroneStatusPanel() {
         //setPreferredSize(new Dimension(200, 400));
         setBackground(panelBackground);
@@ -47,6 +62,11 @@ public class DroneStatusPanel extends JPanel {
         refreshTimer.start();
     }
 
+    /**
+     * Returns the preferred size of this panel based on the number of drone entries.
+     *
+     * @return the preferred Dimension of the panel
+     */
     @Override
     public Dimension getPreferredSize() {
         // Header height + (approx. 90 pixels per drone entry)
@@ -57,6 +77,16 @@ public class DroneStatusPanel extends JPanel {
         return new Dimension(200, Math.max(400, dynamicHeight));
     }
 
+    /**
+     * Updates the status information for a given drone.
+     *
+     * @param droneId       the drone's identifier
+     * @param x             the x-coordinate of the drone
+     * @param y             the y-coordinate of the drone
+     * @param state         the current state of the drone
+     * @param remainingAgent the amount of firefighting agent remaining (in liters)
+     * @param batteryLife   the remaining battery life in seconds
+     */
     public synchronized void updateDroneStatus(int droneId, int x, int y,
                                                DroneSubsystem.DroneState state,
                                                int remainingAgent, double batteryLife) {
@@ -64,6 +94,11 @@ public class DroneStatusPanel extends JPanel {
         repaint();
     }
 
+    /**
+     * Paints the component by drawing the title, separator, and the status information for each drone.
+     *
+     * @param g the Graphics context used for painting
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -160,6 +195,18 @@ public class DroneStatusPanel extends JPanel {
         }
     }
 
+    /**
+     * Draws a progress bar to visually represent a value relative to a maximum.
+     *
+     * @param g        the Graphics2D context used for drawing
+     * @param x        the x-coordinate of the progress bar
+     * @param y        the y-coordinate of the progress bar
+     * @param width    the width of the progress bar
+     * @param height   the height of the progress bar
+     * @param value    the current value to display
+     * @param maxValue the maximum possible value
+     * @param fillColor    the color of the filled portion of the progress bar
+     */
     private void drawProgressBar(Graphics2D g, int x, int y, int width, int height,
                                  int value, int maxValue, Color fillColor) {
         // Draw background

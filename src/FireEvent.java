@@ -3,6 +3,11 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
+/**
+ * Represents a fire event in the simulation.
+ * Contains details such as the time of occurrence, zone ID, event type, severity,
+ * required firefighting agent, fault information, and zone coordinates.
+ */
 public class FireEvent implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -14,6 +19,9 @@ public class FireEvent implements Serializable {
     public String fault;
     private FireEventState currentState = FireEventState.INACTIVE;
 
+    /**
+     * Enumeration of possible states for a fire event.
+     */
     public enum FireEventState {
         ACTIVE,
         INACTIVE,
@@ -27,7 +35,14 @@ public class FireEvent implements Serializable {
     private transient FireIncidentSubsystem fireIncidentSubsystem;
 
     /**
-     * Constructs a FireEvent and captures the zone details from the provided subsystem.
+     * Constructs a new FireEvent.
+     *
+     * @param time the time at which the event occurred (in HH:mm:ss format)
+     * @param zoneId the ID of the zone where the event occurred
+     * @param eventType the type of fire event
+     * @param severity the severity of the fire event
+     * @param fault fault information related to the event, if any
+     * @param fireIncidentSubsystem the FireIncidentSubsystem instance to capture zone coordinates
      */
     public FireEvent(String time, int zoneId, String eventType, String severity, String fault, FireIncidentSubsystem fireIncidentSubsystem) {
         this.time = time;
@@ -42,6 +57,11 @@ public class FireEvent implements Serializable {
         this.currentState = FireEventState.ACTIVE;
     }
 
+    /**
+     * Constructs a new FireEvent as a copy of an existing event.
+     *
+     * @param other the FireEvent to copy
+     */
     public FireEvent(FireEvent other) {
         this.time = other.time;
         this.zoneId = other.zoneId;
@@ -54,6 +74,11 @@ public class FireEvent implements Serializable {
         this.fireIncidentSubsystem = null; // Don't carry over transient references
     }
 
+    /**
+     * Parses the time string and returns it as a LocalTime object.
+     *
+     * @return the event time as a LocalTime, or LocalTime.MIDNIGHT if parsing fails
+     */
     public LocalTime getTimeAsLocalTime() {
         try {
             return LocalTime.parse(this.time, DateTimeFormatter.ofPattern("HH:mm:ss"));
@@ -64,10 +89,20 @@ public class FireEvent implements Serializable {
     }
 
 
+    /**
+     * Returns the current state of the fire event.
+     *
+     * @return the current state (ACTIVE or INACTIVE)
+     */
     public FireEventState getCurrentState() {
         return currentState;
     }
 
+    /**
+     * Sets the current state of the fire event.
+     *
+     * @param currentState the new state of the fire event
+     */
     public void setCurrentState(FireEventState currentState) {
         this.currentState = currentState;
     }
@@ -87,12 +122,55 @@ public class FireEvent implements Serializable {
 //        this.zoneDetails = fireIncidentSubsystem != null ? fireIncidentSubsystem.getZoneCoordinates() : "Unknown";
 //    }
 
+    /**
+     * Returns the time of the fire event.
+     *
+     * @return a string representing the event time in HH:mm:ss format
+     */
     public String getTime() { return time; }
+
+    /**
+     * Returns the zone ID where the fire event occurred.
+     *
+     * @return the zone ID
+     */
     public int getZoneId() { return zoneId; }
+
+    /**
+     * Returns the type of the fire event.
+     *
+     * @return the event type
+     */
     public String getEventType() { return eventType; }
+
+    /**
+     * Returns the severity of the fire event.
+     *
+     * @return a string representing the severity
+     */
     public String getSeverity() { return severity; }
+
+    /**
+     * Sets the required amount of firefighting agent for the event.
+     *
+     * @param litres the amount of agent needed in liters
+     * @return the updated required amount
+     */
     public int setLitres(int litres) { litresNeeded = litres; return litresNeeded; }
+
+    /**
+     * Decreases the required firefighting agent by a specified amount.
+     *
+     * @param litres the amount of agent to remove
+     * @return the updated required amount
+     */
     public int removeLitres(int litres) { this.litresNeeded -= litres; return litresNeeded; }
+
+    /**
+     * Returns the required amount of firefighting agent for the event.
+     *
+     * @return the amount in liters
+     */
     public int getLitres() { return litresNeeded; }
 
     /**
@@ -108,9 +186,18 @@ public class FireEvent implements Serializable {
                 ", Severity=" + severity + ", LitresNeeded=" + litresNeeded;
     }
 
+    /**
+     * Returns the fault information associated with the fire event.
+     *
+     * @return a string representing the fault information
+     */
     public String getFault() {
         return fault;
     }
+
+    /**
+     * Removes the fault associated with the fire event.
+     */
     public void remFault() {
         fault="NONE";
     }

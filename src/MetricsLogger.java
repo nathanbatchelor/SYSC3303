@@ -2,6 +2,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * MetricsLogger collects and logs various metrics during the simulation,
+ * including simulation duration, distances traveled by zones and drones,
+ * and task execution times for drones.
+ * It provides functionality to export these metrics to a file or print a summary.
+ */
 public class MetricsLogger {
     private long simulationStartTime;
     private long simulationEndTime;
@@ -10,26 +16,55 @@ public class MetricsLogger {
     private final Map<Integer, Double> droneDistances = new HashMap<>();
     private final Map<Integer, Long> droneTimes = new HashMap<>();
 
+    /**
+     * Marks the start time of the simulation.
+     */
     public void markSimulationStart() {
         simulationStartTime = System.currentTimeMillis();
     }
 
+    /**
+     * Marks the end time of the simulation.
+     */
     public void markSimulationEnd() {
         simulationEndTime = System.currentTimeMillis();
     }
 
+    /**
+     * Logs the distance covered in a specific zone.
+     *
+     * @param zoneId   the identifier of the zone
+     * @param distance the distance (in meters) covered in the zone
+     */
     public void logZoneDistance(int zoneId, double distance) {
         zoneDistances.put(zoneId, distance);
     }
 
+    /**
+     * Logs the travel distance for a specific drone.
+     *
+     * @param droneId  the identifier of the drone
+     * @param distance the distance (in meters) traveled by the drone
+     */
     public void logDroneTravel(int droneId, double distance) {
         droneDistances.merge(droneId, distance, Double::sum);
     }
 
+    /**
+     * Logs the task execution time for a specific drone.
+     *
+     * @param droneId       the identifier of the drone
+     * @param durationMillis the duration (in milliseconds) of the task
+     */
     public void logDroneTaskTime(int droneId, long durationMillis) {
         droneTimes.merge(droneId, durationMillis, Long::sum);
     }
 
+    /**
+     * Exports the collected metrics to a file.
+     *
+     * @param filename the name of the file to which metrics are written
+     */
     public void exportToFile(String filename) {
         try (FileWriter writer = new FileWriter(filename)) {
             writer.write("=== METRICS SUMMARY ===\n");
@@ -55,6 +90,9 @@ public class MetricsLogger {
         }
     }
 
+    /**
+     * Prints a summary of the collected metrics to the console.
+     */
     public void printSummary() {
         System.out.println("=== METRICS SUMMARY ===");
         System.out.println("Simulation Duration: " + (simulationEndTime - simulationStartTime) + " ms");

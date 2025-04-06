@@ -34,6 +34,9 @@ public class DroneSubsystem implements Runnable {
     private Timer travelTimer;
     private boolean arrivedAtFireZone = false;
 
+    /**
+     * Enumeration of possible drone states.
+     */
     public enum DroneState {
         IDLE,
         ON_ROUTE,
@@ -43,8 +46,13 @@ public class DroneSubsystem implements Runnable {
     }
 
 
-    // Sends an RPC request as a serialized list: [methodName, param1, param2, …, droneId]
-    // TODO: MAKE SEPARATE THREAD?
+    /**
+     * Sends an RPC request to the scheduler.
+     *
+     * @param methodName the name of the method to invoke on the scheduler
+     * @param parameters the parameters for the request
+     * @return the response received from the scheduler, or an error message if communication fails
+     */
     public Object sendRequest(String methodName, Object... parameters) {
         try {
 //            if(!methodName.equals("STOP_?") && !methodName.equals("getNextFireEvent")) {
@@ -90,6 +98,15 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
+    /**
+     * Constructs a new DroneSubsystem.
+     *
+     * @param scheduler the Scheduler instance for managing fire events
+     * @param idNum the unique identifier for this drone
+     * @param baseOffsetport an offset for the port number to avoid conflicts
+     * @param map the MapUI instance for updating drone positions visually
+     * @param logger the MetricsLogger instance for logging travel metrics
+     */
     public DroneSubsystem(Scheduler scheduler, int idNum, int baseOffsetport, MapUI map, MetricsLogger logger) {
         try {
             socket = new DatagramSocket(DEFAULT_DRONE_PORT + idNum + baseOffsetport);
@@ -108,6 +125,9 @@ public class DroneSubsystem implements Runnable {
         map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE, remainingAgent, batteryLife);
     }
 
+    /**
+     * Displays the current state of the drone by printing a message to the console.
+     */
     public void displayState() {
         switch (currentState) {
             case IDLE: System.out.println("Drone " + idNum + " is currently idle.");
@@ -124,12 +144,18 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
+    /**
+     * Simulates the drone takeoff by pausing execution to mimic reaching cruising altitude.
+     */
     private void takeoff() {
         System.out.println(Thread.currentThread().getName() + " taking off to 20m altitude...");
         sleep((long) (5000 * takeoffSpeed));
         System.out.println(Thread.currentThread().getName() + " reached cruising altitude.");
     }
 
+    /**
+     * Simulates the drone's descent to the base.
+     */
     private void descend() {
         System.out.println(Thread.currentThread().getName() + " descending to base...");
         sleep((long) (5000 * takeoffSpeed));
@@ -142,6 +168,11 @@ public class DroneSubsystem implements Runnable {
     private Thread checkEventThread;
     private volatile boolean isCheckingForNewEvent = false;
 
+    /**
+     * Checks periodically for a new fire event while en route to the target event.
+     *
+     * @param currentFireEvent the current target fire event
+     */
     private void checkForNewEvent(FireEvent currentFireEvent) {
         isCheckingForNewEvent = true;
         newEvent = null;
@@ -160,6 +191,14 @@ public class DroneSubsystem implements Runnable {
         checkEventThread.start();
     }
 
+    /**
+     * Travels towards the center of the target fire zone, updating the drone's position incrementally.
+     * If a new fire event is detected en route, the drone switches assignment.
+     *
+     * @param fullTravelTime the total travel time in seconds to the target zone
+     * @param targetEvent the fire event that is the current target
+     * @return the fire event to handle (either the original or a new event detected en route)
+     */
     // This is broken, need to fix
     private synchronized FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
         // Compute the target zone center from the event.
@@ -231,6 +270,9 @@ public class DroneSubsystem implements Runnable {
         return targetEvent;
     }
 
+    /**
+     * Stops checking for new fire events by interrupting the checking thread.
+     */
     private void stopCheckingForNewEvents() {
         isCheckingForNewEvent = false;
         if (checkEventThread != null && checkEventThread.isAlive()) {
@@ -239,6 +281,12 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
+    /**
+     * Simulates extinguishing a fire by opening the nozzle, dropping firefighting agent,
+     * and then closing the nozzle.
+     *
+     * @param amount the amount of firefighting agent (in liters) to drop
+     */
     public void extinguishFire(int amount) {
         System.out.println("\n" + Thread.currentThread().getName() + " opening nozzle...");
         sleep(1000);
@@ -258,6 +306,12 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " nozzle closed.\n");
     }
 
+    /**
+     * Returns the drone to its base after completing its task.
+     * Updates the drone's position incrementally as it returns, then simulates landing.
+     *
+     * @param event the fire event that was being handled
+     */
     public synchronized void returnToBase(FireEvent event) {
         currentState = DroneState.RETURNING;
         displayState();
@@ -296,6 +350,11 @@ public class DroneSubsystem implements Runnable {
         map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE,remainingAgent, batteryLife);
     }
 
+    /**
+     * Makes the drone idle and recharges it after completing its task.
+     *
+     * @param lastEvent the last fire event that was handled
+     */
     private void makeDroneIdleAndRecharge(FireEvent lastEvent) {
         stopCheckingForNewEvents();
         returnToBase(lastEvent);
@@ -305,6 +364,11 @@ public class DroneSubsystem implements Runnable {
         batteryLife = 1800;
     }
 
+    /**
+     * Pauses the execution for a specified duration.
+     *
+     * @param milliseconds the duration to sleep in milliseconds
+     */
     private void sleep(long milliseconds) {
         try {
             Thread.sleep(milliseconds);
@@ -313,6 +377,13 @@ public class DroneSubsystem implements Runnable {
         }
     }
 
+    /**
+     * Starts a timer to detect if the drone fails to reach the fire zone within an expected timeframe.
+     * If the drone does not arrive in time, a fault is triggered.
+     *
+     * @param travelTimeSeconds the expected travel time in seconds
+     * @param event the fire event being targeted
+     */
     private void startTravelFaultTimer(double travelTimeSeconds, FireEvent event) {
         long timeout = (long) (travelTimeSeconds * 1000 * 1.1); // 1.5x buffer
         travelTimer = new Timer();

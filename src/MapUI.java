@@ -36,10 +36,11 @@ public class MapUI extends JPanel {
 
     private DroneStatusPanel statusPanel;
 
-    //private int droneX = -1;
-    //private int droneY = -1;
-    //private DroneSubsystem.DroneState droneState = DroneSubsystem.DroneState.IDLE;
 
+    /**
+     * Constructs a new MapUI panel with preset dimensions and background color.
+     * Starts a timer to periodically repaint the panel.
+     */
     public MapUI() {
         setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
         setBackground(Color.WHITE); // Set white background for better contrast
@@ -52,19 +53,39 @@ public class MapUI extends JPanel {
         repaintTimer.start();
     }
 
+    /**
+     * Sets the zones to be displayed on the map.
+     *
+     * @param zones a list of Zone objects
+     */
     public void setZones(java.util.List<Zone> zones) {
         this.zones = zones;
     }
 
+    /**
+     * Sets the DroneStatusPanel to be updated with drone statuses.
+     *
+     * @param statusPanel the DroneStatusPanel instance
+     */
     public void setStatusPanel(DroneStatusPanel statusPanel) {
         this.statusPanel = statusPanel;
     }
 
 
+    /**
+     * Inner class representing information about a drone for rendering purposes.
+     */
     private static class DroneInfo {
         final int x, y;
         final DroneSubsystem.DroneState state;
 
+        /**
+         * Constructs a new DroneInfo instance.
+         *
+         * @param x the x-coordinate of the drone
+         * @param y the y-coordinate of the drone
+         * @param state the current state of the drone
+         */
         public DroneInfo(int x, int y, DroneSubsystem.DroneState state) {
             this.x = x;
             this.y = y;
@@ -72,6 +93,16 @@ public class MapUI extends JPanel {
         }
     }
 
+    /**
+     * Updates the position and state of a drone on the map, and refreshes the DroneStatusPanel.
+     *
+     * @param droneId        the unique identifier of the drone
+     * @param x              the current x-coordinate of the drone
+     * @param y              the current y-coordinate of the drone
+     * @param droneState     the current state of the drone
+     * @param remainingAgent the remaining firefighting agent capacity
+     * @param batteryLife    the remaining battery life in seconds
+     */
     public synchronized void updateDronePosition(int droneId, int x, int y, DroneSubsystem.DroneState droneState, int remainingAgent, double batteryLife) {
         drones.put(droneId, new DroneInfo(x, y, droneState));
         if (statusPanel != null) {
@@ -80,11 +111,23 @@ public class MapUI extends JPanel {
         }
     }
 
-    // Overloaded method for backward compatibility:
+    /**
+     * Overloaded method to update the drone position using default values for remaining agent and battery life.
+     *
+     * @param droneId    the unique identifier of the drone
+     * @param x          the current x-coordinate of the drone
+     * @param y          the current y-coordinate of the drone
+     * @param droneState the current state of the drone
+     */
     public synchronized void updateDronePosition(int droneId, int x, int y, DroneSubsystem.DroneState droneState) {
         updateDronePosition(droneId, x, y, droneState, 0, 0);
     }
 
+    /**
+     * Paints the MapUI component by drawing the grid, zones, fire events, and drones.
+     *
+     * @param g the Graphics context for drawing
+     */
     @Override
     protected synchronized void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -186,6 +229,11 @@ public class MapUI extends JPanel {
 //        }
     }
 
+    /**
+     * Draws all zones on the map with their borders and labels.
+     *
+     * @param g the Graphics2D context for drawing zones
+     */
     private void drawZones(Graphics2D g) {
         int panelHeight = getHeight();
         int Y_OFFSET = 2; // move everything up by 2 pixels to show bottom lines
@@ -229,6 +277,11 @@ public class MapUI extends JPanel {
     }
 
 
+    /**
+     * Draws all fire events on the map.
+     *
+     * @param g the Graphics2D context for drawing fire events
+     */
     private void drawFires(Graphics2D g) {
         int panelHeight = getHeight();
         int Y_OFFSET = 2; // same offset as drawZones
@@ -274,6 +327,11 @@ public class MapUI extends JPanel {
         }
     }
 
+    /**
+     * Draws all drones on the map with color-coded status.
+     *
+     * @param g the Graphics2D context for drawing drones
+     */
     private void drawDrones(Graphics2D g) {
         for (Map.Entry<Integer, DroneInfo> entry : drones.entrySet()) {
             int id = entry.getKey();
@@ -315,6 +373,11 @@ public class MapUI extends JPanel {
     }
 
 
+    /**
+     * Draws all fire events on the map.
+     *
+     * @param fireEvent the fire event to be drawn.
+     */
     public void drawFireEvents(FireEvent fireEvent) {
         int index = fireEvent.getZoneId() - 1;
 
@@ -331,6 +394,11 @@ public class MapUI extends JPanel {
         //repaint();
     }
 
+    /**
+     * Draws the grid background on the map.
+     *
+     * @param g the Graphics2D context for drawing the grid
+     */
     private void drawGrid(Graphics g) {
         g.setColor(GRID_COLOR); // consistent with your defined grid color
 

@@ -20,6 +20,10 @@ public class LegendPanel extends JPanel {
     private static final int VERTICAL_PADDING = 15;
     private static final int HORIZONTAL_PADDING = 10;
 
+    /**
+     * Constructs a new LegendPanel with preset dimensions, background color,
+     * and border settings.
+     */
     public LegendPanel() {
         setPreferredSize(new Dimension(LEGEND_WIDTH, LEGEND_HEIGHT));
         setBackground(Color.WHITE);
@@ -29,6 +33,11 @@ public class LegendPanel extends JPanel {
         ));
     }
 
+    /**
+     * Paints the legend panel by drawing the title, sections, and individual legend items.
+     *
+     * @param g the Graphics context used for drawing
+     */
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -84,6 +93,14 @@ public class LegendPanel extends JPanel {
         drawLegendItem(g2d, DRONE_FAULT_COLOR, "Fault", y);
     }
 
+    /**
+     * Draws an individual legend item consisting of a colored square and a label.
+     *
+     * @param g the Graphics2D context used for drawing
+     * @param color the color to fill the square
+     * @param label the text label for the legend item
+     * @param y the y-coordinate at which to draw the legend item
+     */
     private void drawLegendItem(Graphics2D g, Color color, String label, int y) {
         g.setColor(color);
         g.fillRect(HORIZONTAL_PADDING, y, SQUARE_SIZE, SQUARE_SIZE);
