@@ -24,6 +24,7 @@ public class DroneSubsystem implements Runnable {
     private boolean busy = false;
     private boolean hardFault = false;
 
+    public boolean testingReturningState = false;
     public boolean arrivalFault = false;
     public boolean nozzleFault = false;
     public boolean packetlFault = false;
@@ -54,6 +55,9 @@ public class DroneSubsystem implements Runnable {
      * @return the response received from the scheduler, or an error message if communication fails
      */
     public Object sendRequest(String methodName, Object... parameters) {
+        // when sendRequest is in testing mode
+        if (testingReturningState) return 15.0;
+
         try {
 //            if(!methodName.equals("STOP_?") && !methodName.equals("getNextFireEvent")) {
 //                System.out.println("Drone " + idNum + " sending request: " + methodName);
@@ -123,6 +127,10 @@ public class DroneSubsystem implements Runnable {
         this.map = map;
         this.logger = logger;
         map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE, remainingAgent, batteryLife);
+    }
+
+    public DroneState getState(){
+        return this.currentState;
     }
 
     /**
@@ -200,7 +208,7 @@ public class DroneSubsystem implements Runnable {
      * @return the fire event to handle (either the original or a new event detected en route)
      */
     // This is broken, need to fix
-    private synchronized FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
+    public synchronized FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
         // Compute the target zone center from the event.
         String[] zoneCoords = targetEvent.getZoneDetails().replaceAll("[()]", "").split(" to ");
         String[] startCoords = zoneCoords[0].split(",");
@@ -231,6 +239,7 @@ public class DroneSubsystem implements Runnable {
 //            currentX = startX + (int) ((destX - startX) * fraction);
 //            currentY = startY + (int) ((destY - startY) * fraction);
             //System.out.println(idNum + "Is travelling to the zone at these coords !!!" + currentX + " " + currentY);
+            this.currentState = DroneState.ON_ROUTE;
             map.updateDronePosition(idNum, currentX, currentY, DroneState.ON_ROUTE,remainingAgent, batteryLife);
 
             sleep(1000);  // simulate one second of travel
@@ -255,6 +264,7 @@ public class DroneSubsystem implements Runnable {
         // Completed travel to target zone center.
         currentX = destX;
         currentY = destY;
+        this.currentState = DroneState.ON_ROUTE;
         map.updateDronePosition(idNum, currentX, currentY, DroneState.ON_ROUTE,remainingAgent, batteryLife);
         arrivedAtFireZone = true; // Prevent fault
         if (travelTimer != null) {
