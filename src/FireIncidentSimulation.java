@@ -6,7 +6,7 @@ public class FireIncidentSimulation {
     public static void main(String[] args) {
         String fireIncidentFile = "src//input//test_event_file_with_faults.csv";
         String zoneFile = "src//input//test_zone_file.csv";
-        int numDrones = 10;
+        int numDrones = 5;
 
         MetricsLogger logger = new MetricsLogger();
         logger.markSimulationStart();

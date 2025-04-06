@@ -204,7 +204,12 @@ public class MapUI extends JPanel {
 
             int zoneId = fireEvent.getZoneId();
             if (zoneId - 1 >= zones.size()) continue;  // bounds safety
-            Zone zone = zones.get(zoneId - 1);
+            Zone zone = zones.stream()
+                    .filter(z -> z.getId() == zoneId)
+                    .findFirst()
+                    .orElse(null);
+            if (zone == null) return;
+            zone = zones.get(zoneId - 1);
 
             List<List<Integer>> coords = zone.getCoords();
             int x1 = coords.get(0).get(0);

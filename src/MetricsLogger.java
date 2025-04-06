@@ -15,12 +15,58 @@ public class MetricsLogger {
     private final Map<Integer, Double> zoneDistances = new HashMap<>();
     private final Map<Integer, Double> droneDistances = new HashMap<>();
     private final Map<Integer, Long> droneTimes = new HashMap<>();
+    private final Map<String, FireEventMetrics> eventMetrics = new HashMap<>();
 
     /**
      * Marks the start time of the simulation.
      */
     public void markSimulationStart() {
         simulationStartTime = System.currentTimeMillis();
+    }
+
+    public void recordFireDetected(FireEvent event) {
+        FireEventMetrics m = new FireEventMetrics();
+        m.zoneId = event.getZoneId();
+        m.litresNeeded = event.getLitres();
+
+        // Parse event.getTime() as LocalTime to get a fixed logical time
+        m.detectedTime = parseTimeToMillis(event.getTime());  // NEW LINE
+
+        eventMetrics.put(event.getTime() + "_" + event.getZoneId(), m);
+    }
+
+    public void recordFireExtinguished(FireEvent event) {
+        String key = event.getTime() + "_" + event.getZoneId();
+        FireEventMetrics m = eventMetrics.get(key);
+        if (m != null) {
+            m.extinguishedTime = System.currentTimeMillis();
+        }
+    }
+
+    private long parseTimeToMillis(String timeString) {
+        try {
+            // Converts "13:03:15" to milliseconds since start of day
+            java.time.LocalTime t = java.time.LocalTime.parse(timeString);
+            return t.toSecondOfDay() * 1000L;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    private String formatTime(long millis) {
+        return new java.text.SimpleDateFormat("HH:mm:ss.SSS").format(new java.util.Date(millis));
+    }
+
+
+
+    public void recordFireDispatched(FireEvent event, int droneId) {
+        String key = event.getTime() + "_" + event.getZoneId();
+        FireEventMetrics m = eventMetrics.get(key);
+        if (m != null) {
+            m.dispatchedTime = System.currentTimeMillis();
+            m.droneId = droneId;
+        }
     }
 
     /**
@@ -60,6 +106,12 @@ public class MetricsLogger {
         droneTimes.merge(droneId, durationMillis, Long::sum);
     }
 
+
+    private final List<String> faults = new ArrayList<>();
+    public void logFault(int droneId, String type, FireEvent event) {
+        faults.add("Drone " + droneId + " fault [" + type + "] on fire at Zone " + event.getZoneId());
+    }
+
     /**
      * Exports the collected metrics to a file.
      *
@@ -85,6 +137,18 @@ public class MetricsLogger {
                 writer.write("Drone " + entry.getKey() + ": " + entry.getValue() + " ms\n");
             }
 
+            writer.write("\n--- Fire Event Metrics ---\n");
+            for (var entry : eventMetrics.entrySet()) {
+                FireEventMetrics m = entry.getValue();
+                writer.write("Event [" + entry.getKey() + "]\n");
+                writer.write("  Zone: " + m.zoneId + "\n");
+                writer.write("  Drone: " + m.droneId + "\n");
+                writer.write("  Litres Needed: " + m.litresNeeded + "\n");
+                writer.write("  Detected: " + formatTime(m.detectedTime) + "\n");
+                writer.write("  Dispatched: " + formatTime(m.dispatchedTime) + " (+" + (m.dispatchedTime - m.detectedTime) + " ms)\n");
+                writer.write("  Extinguished: " + formatTime(m.extinguishedTime) + " (+" + (m.extinguishedTime - m.dispatchedTime) + " ms from dispatch)\n");
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -106,4 +170,15 @@ public class MetricsLogger {
         System.out.println("\n--- Drone Times ---");
         droneTimes.forEach((id, time) -> System.out.println("Drone " + id + ": " + time + " ms"));
     }
+
+
+    private static class FireEventMetrics {
+        long detectedTime;
+        long dispatchedTime;
+        long extinguishedTime;
+        int litresNeeded;
+        int zoneId;
+        int droneId;
+    }
+
 }

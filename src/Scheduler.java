@@ -156,6 +156,8 @@ public class Scheduler implements Runnable {
                 }
             }
             if (map != null) {
+                //map.setZones(uiZones);
+                uiZones.sort(Comparator.comparingInt(Zone::getId));
                 map.setZones(uiZones);
             }
         } catch (IOException e) {
@@ -228,6 +230,7 @@ public class Scheduler implements Runnable {
         int totalWaterNeeded = calculateWaterNeeded(event.getSeverity());
         event.setLitres(totalWaterNeeded);
         queue.add(event);
+        logger.recordFireDetected(event);
         notifyAll();
         System.out.println("Scheduler: Added FireEvent → " + event);
     }
@@ -350,8 +353,6 @@ public class Scheduler implements Runnable {
             if (isFinished) {
                 System.out.println("Scheduler: No more fire events. Notifying all waiting drones to stop.");
                 stopDrones = true;
-                logger.markSimulationEnd();
-                logger.exportToFile("simulation_metrics.txt");
                 notifyAll();
                 return null;
             }
@@ -375,7 +376,6 @@ public class Scheduler implements Runnable {
 //            stopDrones = true;
             notifyAll();
         }
-
         return event;
     }
 
@@ -413,7 +413,8 @@ public class Scheduler implements Runnable {
         if (remainingLiters > 0 && waterDropped > 0) {
             System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " still needs " + remainingLiters + "L.");
             //yeahmap.drawFireEvents(event);
-            ((LinkedList<FireEvent>) queue).addFirst(event);
+            queue.add(event);
+            //((LinkedList<FireEvent>) queue).addFirst(event);
             notifyAll();
         } else {
             markFireExtinguished(event);
@@ -439,6 +440,7 @@ public class Scheduler implements Runnable {
         System.out.println("\nScheduler: Fire at Zone: " + event.getZoneId() + " Extinguished\n");
         map.drawFireEvents(event);
         event.setCurrentState(FireEvent.FireEventState.INACTIVE);
+        logger.recordFireExtinguished(event);
         if (queue.isEmpty()) {
             //System.out.println("Scheduler: All fire events have been marked as extinguished. Shutting down.");
             state = SchedulerState.SHUTTING_DOWN;
@@ -467,9 +469,9 @@ public class Scheduler implements Runnable {
         }
 
         event.remFault();
-        FireEvent clone = new FireEvent(event); // or: new FireEvent(event, true);
-        //queue.add(event);
-        ((LinkedList<FireEvent>) queue).addFirst(clone);
+        //FireEvent clone = new FireEvent(event); // or: new FireEvent(event, true);
+        queue.add(event);
+        //((LinkedList<FireEvent>) queue).addFirst(clone);
     }
 
     /**

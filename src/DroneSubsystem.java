@@ -281,7 +281,7 @@ public class DroneSubsystem implements Runnable {
     /**
      * Stops checking for new fire events by interrupting the checking thread.
      */
-    private void stopCheckingForNewEvents() {
+    private synchronized void stopCheckingForNewEvents() {
         isCheckingForNewEvent = false;
         if (checkEventThread != null && checkEventThread.isAlive()) {
             checkEventThread.interrupt();
@@ -295,7 +295,7 @@ public class DroneSubsystem implements Runnable {
      *
      * @param amount the amount of firefighting agent (in liters) to drop
      */
-    public void extinguishFire(int amount) {
+    public synchronized void extinguishFire(int amount) {
         System.out.println("\n" + Thread.currentThread().getName() + " opening nozzle...");
         sleep(1000);
         batteryLife -= 1;
@@ -363,7 +363,7 @@ public class DroneSubsystem implements Runnable {
      *
      * @param lastEvent the last fire event that was handled
      */
-    private void makeDroneIdleAndRecharge(FireEvent lastEvent) {
+    private synchronized void makeDroneIdleAndRecharge(FireEvent lastEvent) {
         stopCheckingForNewEvents();
         returnToBase(lastEvent);
         currentState = DroneState.IDLE;
@@ -402,6 +402,7 @@ public class DroneSubsystem implements Runnable {
                 sendRequest("handleDroneFault",event,"timeout",idNum);
                 currentState = DroneState.RETURNING;
                 map.updateDronePosition(idNum, currentX, currentY, DroneState.FAULT,remainingAgent, batteryLife);
+                arrivalFault = false;
                 makeDroneIdleAndRecharge(event);
             }
             }
@@ -419,6 +420,9 @@ public class DroneSubsystem implements Runnable {
                 if ((boolean)sendRequest("STOP_?", idNum))break;
 
                 FireEvent event = (FireEvent) sendRequest("getNextFireEvent");
+                if(event != null) {
+                    logger.recordFireDispatched(event, idNum);
+                }
                 busy = true;
                 if (event == null) {
                     busy = false;
@@ -443,10 +447,10 @@ public class DroneSubsystem implements Runnable {
                         // Drone stays put, timer will go off
                         sleep((long) (travelTime * 0.15 * 1000));  // simulate drone doing nothing
                     }
-                    if(currentState == DroneState.RETURNING) {
-                        System.out.println("!!!!!Drone " + idNum + " returning to base.!!!!!");
-                        break;
-                    }
+//                    if(currentState == DroneState.RETURNING) {
+//                        System.out.println("!!!!!Drone " + idNum + " returning to base.!!!!!");
+//                        break;
+//                    }
                     // HANDLE PACKET LOSS FAULT
                     if ("PACKET_LOSS".equalsIgnoreCase(event.getFault())) {
                         System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] PACKET LOSS fault injected - Lost packets in communication. \033[0m");
@@ -461,6 +465,7 @@ public class DroneSubsystem implements Runnable {
                     event = travelToZoneCenter(travelTime, event);
 
                     if(event != oldEvent){
+                        System.out.println("Grants Debug");
                         continue;
                     }
 
@@ -514,5 +519,7 @@ public class DroneSubsystem implements Runnable {
             e.printStackTrace();
         }
         System.out.println("DroneSubsystem " + idNum + " shutting down.");
+        logger.markSimulationEnd();
+        logger.exportToFile("simulation_metrics.txt");
     }
 }
