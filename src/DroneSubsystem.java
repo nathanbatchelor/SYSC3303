@@ -213,6 +213,14 @@ public class DroneSubsystem implements Runnable {
         int startX = currentX;
         int startY = currentY;
 
+        int adjustment = 25; // Half of 50 (METERS_PER_CELL)
+        if (destX % 2 == 1) {
+            destX -= adjustment;
+        }
+        if (destY % 2 == 1) {
+            destY -= adjustment;
+        }
+
         // divide the travel into one-second increments.
 
         if (!isCheckingForNewEvent) {

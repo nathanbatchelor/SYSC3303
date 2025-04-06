@@ -140,93 +140,6 @@ public class MapUI extends JPanel {
         drawZones(g2d);
         drawFires(g2d);
         drawDrones(g2d);
-
-//        // Draw zones
-//        for (Zone zone : zones) {
-//            // get the zone coordinates
-//            int id = zone.getId();
-//            List<List<Integer>> coords = zone.getCoords();
-//            int x1 = coords.get(0).get(0);
-//            int y1 = coords.get(0).get(1);
-//            int x2 = coords.get(1).get(0);
-//            int y2 = coords.get(1).get(1);
-//
-//            int adjustedY1 = PANEL_HEIGHT - (y1 * PIXELS_PER_CELL / METERS_PER_CELL);
-//            int adjustedY2 = PANEL_HEIGHT - (y2 * PIXELS_PER_CELL / METERS_PER_CELL);
-//
-//            int topY = Math.min(adjustedY1, adjustedY2);
-//            int height = Math.abs(adjustedY2 - adjustedY1);
-//
-//            // Convert to screen coordinates (X axis)
-//            int screenX = x1 * PIXELS_PER_CELL / METERS_PER_CELL;
-//            int screenWidth = (x2 - x1) * PIXELS_PER_CELL / METERS_PER_CELL;
-//
-//
-//            g.setColor(Color.BLUE);
-//            g.drawRect(screenX, topY, screenWidth, height);
-//            g.drawString("Z(" + id + ")", screenX + 3, topY + 15);
-//        }
-//
-//        for( FireEvent fireEvent : fireEvents){
-//            if (fireEvent == null) {
-//                continue;
-//            }
-//            int zoneId = fireEvent.getZoneId();
-//            Zone zone = zones.get(zoneId-1);
-//
-//            List<List<Integer>> coords = zone.getCoords();
-//            int x1 = coords.get(0).get(0);
-//            int y1 = coords.get(0).get(1);
-//            int x2 = coords.get(1).get(0);
-//            int y2 = coords.get(1).get(1);
-//
-//            // Calculate zone center in real-world meters
-//
-//            int centerX = Math.floorDiv((x1 + x2), 2);
-//            int centerY = Math.floorDiv((y1 + y2), 2);
-//
-//            if (centerX % 2 == 1) {
-//                centerX-=METERS_PER_CELL/2;
-//            }
-//            if (centerY % 2 == 1) {
-//                centerY+=METERS_PER_CELL/2;
-//            }
-//
-//            // Convert to screen coordinates
-//            int screenX = (centerX * PIXELS_PER_CELL) / METERS_PER_CELL;
-//            int screenY = PANEL_HEIGHT - ((centerY * PIXELS_PER_CELL) / METERS_PER_CELL);
-//
-//            // Fire event should take up 1 whole cell
-//            if (fireEvent.getCurrentState() == FireEvent.FireEventState.ACTIVE){
-//                g.setColor(Color.RED);
-//            }else{
-//                g.setColor(new Color(11,69,21));
-//            }
-//            g.fillRect(screenX, screenY, PIXELS_PER_CELL, PIXELS_PER_CELL);
-//            g.setColor(Color.BLACK);
-//            g.drawString(fireEvent.getSeverity().split("")[0], screenX + 5, screenY + 15);
-//        }
-//        for (Map.Entry<Integer, DroneInfo> entry : drones.entrySet()) {
-//            int id = entry.getKey();
-//            DroneInfo drone = entry.getValue();
-//
-//            int screenX = (drone.x * PIXELS_PER_CELL) / METERS_PER_CELL;
-//            int screenY = getHeight() - (drone.y * PIXELS_PER_CELL) / METERS_PER_CELL;
-//
-//            Color droneColor = Color.GRAY; // Default color
-//            switch (drone.state) {
-//                case DROPPING_AGENT -> droneColor = new Color(55, 255, 0);
-//                case RETURNING -> droneColor = Color.PINK;
-//                case IDLE -> droneColor = new Color(0, 247, 255);
-//                case FAULT -> droneColor = new Color(84, 4, 177);
-//                case ON_ROUTE -> droneColor = Color.ORANGE;
-//            }
-//
-//            g.setColor(droneColor);
-//            g.fillRect(screenX, screenY, PIXELS_PER_CELL, PIXELS_PER_CELL);
-//            g.setColor(Color.BLACK);
-//            g.drawString("D" + id, screenX + 2, screenY + 15);
-//        }
     }
 
     /**
@@ -305,6 +218,13 @@ public class MapUI extends JPanel {
 
             if (centerX % 2 == 1) centerX -= METERS_PER_CELL / 2;
             if (centerY % 2 == 1) centerY += METERS_PER_CELL / 2;
+
+            int zoneHeight = Math.abs(y2 - y1);
+
+            // Shift Y up by 50 if height in grid cells is even
+            if ((zoneHeight / METERS_PER_CELL) % 2 == 0) {
+                centerY += METERS_PER_CELL;
+            }
 
             // Convert to screen coordinates
             int screenX = (centerX * PIXELS_PER_CELL) / METERS_PER_CELL;
@@ -416,7 +336,11 @@ public class MapUI extends JPanel {
         }
     }
 
-    // Helper method to determine if a color is dark (for text contrast)
+    /**
+     * Helper method to check if a color is Dark
+     *
+     * @param color the Color to check
+     */
     private boolean isDarkColor(Color color) {
         // Using perceived brightness formula
         double brightness = 0.299 * color.getRed() + 0.587 * color.getGreen() + 0.114 * color.getBlue();

@@ -6,6 +6,7 @@ public class FireIncidentSimulation {
     public static void main(String[] args) {
         String fireIncidentFile = "src//input//test_event_file_with_faults.csv";
         String zoneFile = "src//input//test_zone_file.csv";
+        int numDrones = 10;
 
         MetricsLogger logger = new MetricsLogger();
         logger.markSimulationStart();
@@ -46,11 +47,11 @@ public class FireIncidentSimulation {
             frame.setVisible(true);
 
             // === SIMULATION ===
-            Scheduler scheduler = new Scheduler(zoneFile, fireIncidentFile, 5, 0, mapUI, logger);
+            Scheduler scheduler = new Scheduler(zoneFile, fireIncidentFile, numDrones, 0, mapUI, logger);
             Thread schedulerThread = new Thread(scheduler, "Scheduler");
             schedulerThread.start();
 
-            for (int i = 1; i <= 10; i++) {
+            for (int i = 1; i <= numDrones; i++) {
                 DroneSubsystem drone = new DroneSubsystem(scheduler, i, 0, mapUI, logger);
                 new Thread(drone, "Drone Subsystem " + i).start();
             }

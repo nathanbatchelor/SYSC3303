@@ -350,6 +350,8 @@ public class Scheduler implements Runnable {
             if (isFinished) {
                 System.out.println("Scheduler: No more fire events. Notifying all waiting drones to stop.");
                 stopDrones = true;
+                logger.markSimulationEnd();
+                logger.exportToFile("simulation_metrics.txt");
                 notifyAll();
                 return null;
             }
@@ -438,9 +440,7 @@ public class Scheduler implements Runnable {
         map.drawFireEvents(event);
         event.setCurrentState(FireEvent.FireEventState.INACTIVE);
         if (queue.isEmpty()) {
-            System.out.println("Scheduler: All fire events have been marked as extinguished. Shutting down.");
-            logger.markSimulationEnd();
-            logger.exportToFile("simulation_metrics.txt");
+            //System.out.println("Scheduler: All fire events have been marked as extinguished. Shutting down.");
             state = SchedulerState.SHUTTING_DOWN;
             isFinished = true;
             notifyAll();
@@ -468,6 +468,7 @@ public class Scheduler implements Runnable {
 
         event.remFault();
         FireEvent clone = new FireEvent(event); // or: new FireEvent(event, true);
+        //queue.add(event);
         ((LinkedList<FireEvent>) queue).addFirst(clone);
     }
 
