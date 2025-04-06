@@ -56,7 +56,6 @@ public class MapUI extends JPanel {
 
     public synchronized void updateDronePosition(int droneId, int x, int y, DroneSubsystem.DroneState droneState) {
         drones.put(droneId, new DroneInfo(x, y+101, droneState));
-        System.out.println("$$$$$$ UI update for Drone " + droneId + ": (" + x + "," + y + ") state=" + droneState);
         //SwingUtilities.invokeLater(() -> {
           //  revalidate();
             //repaint();

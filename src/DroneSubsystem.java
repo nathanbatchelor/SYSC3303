@@ -147,7 +147,6 @@ public class DroneSubsystem implements Runnable {
         newEvent = null;
         checkEventThread = new Thread(() -> {
             while (isCheckingForNewEvent) {
-                System.out.println("@@@ in the spot I am lookin for @@@");
                 FireEvent checkEvent = (FireEvent) sendRequest("getNextAssignedEvent", Thread.currentThread().getName(), currentX, currentY);
                 if (checkEvent != null && checkEvent.getZoneId() != currentFireEvent.getZoneId()) {
                     newEvent = checkEvent;
@@ -162,7 +161,7 @@ public class DroneSubsystem implements Runnable {
     }
 
     // This is broken, need to fix
-    private FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
+    private synchronized FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
         // Compute the target zone center from the event.
         String[] zoneCoords = targetEvent.getZoneDetails().replaceAll("[()]", "").split(" to ");
         String[] startCoords = zoneCoords[0].split(",");
@@ -179,19 +178,21 @@ public class DroneSubsystem implements Runnable {
 
         if (!isCheckingForNewEvent) {
             newEvent = null;
-            //checkForNewEvent(targetEvent);
+            checkForNewEvent(targetEvent);
         }
-        System.out.println("Ooppsie we are here :(");
-
 
         int steps = (int) Math.ceil(fullTravelTime);
         for (int i = 1; i <= steps; i++) {
             double fraction = (double) i / steps;
             // Update position along the straight line from (startX, startY) to (destX, destY).
-            currentX = startX + (int) ((destX - startX) * fraction);
-            currentY = startY + (int) ((destY - startY) * fraction);
-            map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE);
-            System.out.println("!!!!!!!"+Thread.currentThread().getName() + " traveling to zone center at (" + currentX + ", " + currentY + ")!!!!!!");
+            synchronized (this) {
+                currentX = startX + (int) ((destX - startX) * fraction);
+                currentY = startY + (int) ((destY - startY) * fraction);
+            }
+//            currentX = startX + (int) ((destX - startX) * fraction);
+//            currentY = startY + (int) ((destY - startY) * fraction);
+            //System.out.println(idNum + "Is travelling to the zone at these coords !!!" + currentX + " " + currentY);
+            map.updateDronePosition(idNum, currentX, currentY, DroneState.ON_ROUTE);
 
             sleep(1000);  // simulate one second of travel
             batteryLife -= 1; // decrement battery by 1 second
@@ -208,7 +209,6 @@ public class DroneSubsystem implements Runnable {
                 // Re-add the original event back to the queue.
                 //scheduler.addFireEvent(targetEvent); //CHEATING!
                 sendRequest("ADD_FIRE_EVENT",targetEvent);
-                System.out.println("Added event back to queue!!!!" + newEvent.getZoneId());
                 return newEvent;
             }
         }
@@ -258,7 +258,7 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " nozzle closed.\n");
     }
 
-    public void returnToBase(FireEvent event) {
+    public synchronized void returnToBase(FireEvent event) {
         currentState = DroneState.RETURNING;
         displayState();
         System.out.println("\n" + Thread.currentThread().getName() + " returning to base...\n");
@@ -276,9 +276,13 @@ public class DroneSubsystem implements Runnable {
         int steps = (int) Math.ceil(travelTime);
         for (int i = 1; i <= steps; i++) {
             double fraction = (double) i / steps;
-            currentX = startX + (int) ((baseX - startX) * fraction);
-            currentY = startY + (int) ((baseY - startY) * fraction);
-
+            synchronized (this) {
+                currentX = startX + (int) ((baseX - startX) * fraction);
+                currentY = startY + (int) ((baseY - startY) * fraction);
+            }
+//            currentX = startX + (int) ((baseX - startX) * fraction);
+//            currentY = startY + (int) ((baseY - startY) * fraction);
+//            System.out.println(idNum + "$$$ Is returning from the zone at these coords !!!" + currentX + " " + currentY);
             map.updateDronePosition(idNum, currentX, currentY, DroneState.RETURNING);
             sleep(1000);
             batteryLife -= 1;

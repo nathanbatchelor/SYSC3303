@@ -39,6 +39,20 @@ public class FireEvent implements Serializable {
         this.currentState = FireEventState.ACTIVE;
     }
 
+    public FireEvent(FireEvent other) {
+        this.time = other.time;
+        this.zoneId = other.zoneId;
+        this.eventType = other.eventType;
+        this.severity = other.severity;
+        this.litresNeeded = other.litresNeeded;
+        this.fault = other.fault;  // You can also set this to "NONE" if you're resetting
+        this.zoneDetails = other.zoneDetails;
+        this.currentState = other.currentState;
+        this.fireIncidentSubsystem = null; // Don't carry over transient references
+    }
+
+
+
     public FireEventState getCurrentState() {
         return currentState;
     }

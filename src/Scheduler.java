@@ -236,9 +236,7 @@ public class Scheduler implements Runnable {
         for (FireEvent event : queue) {
             int[] center = calculateZoneCenter(event);
             double distance = Math.sqrt(Math.pow(center[0] - currentX, 2) + Math.pow(center[1] - currentY, 2));
-            System.out.println("This is the distance !!!!!!!!!" + distance);
             if (distance <= threshold) {
-                System.out.println("ARE WE HERE????????" + distance);
                 queue.remove(event);
                 return event;
             }
@@ -346,8 +344,10 @@ public class Scheduler implements Runnable {
             System.out.println("\u001B[33m !!!!Scheduler: handling drone PACKET_LOSS failure!!!! \u001B[0m");
             packetFault = true;
         }
+
         event.remFault();
-        ((LinkedList<FireEvent>) queue).addFirst(event);
+        FireEvent clone = new FireEvent(event); // or: new FireEvent(event, true);
+        ((LinkedList<FireEvent>) queue).addFirst(clone);
     }
 
     public synchronized void removeFireEvent(FireEvent event) {
