@@ -15,7 +15,7 @@ public class DroneSubsystemTest {
     public static void setUpOnce() throws UnknownHostException {
         MetricsLogger logger = new MetricsLogger();
         MapUI mapUI = new MapUI();
-        String fireIncidentFile = "src//input//test_event_file_with_faults.csv";
+        String fireIncidentFile = "src//input//test_event_file.csv";
         String zoneFile = "src//input//test_zone_file.csv";
         fis = new FireIncidentSubsystem(fireIncidentFile, 1001, 0, 0, 100, 100,123);
         scheduler = new Scheduler(zoneFile, fireIncidentFile, 2, 234, mapUI, logger);

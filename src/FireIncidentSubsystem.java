@@ -185,7 +185,7 @@ public class FireIncidentSubsystem implements Runnable {
      * @param port the destination port
      * @throws IOException if an I/O error occurs while sending the response
      */
-    private void sendResponse(Object response, InetAddress address, int port) throws IOException {
+    public void sendResponse(Object response, InetAddress address, int port) throws IOException {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         ObjectOutputStream objStream = new ObjectOutputStream(byteStream);
         objStream.writeObject(response);
@@ -205,7 +205,7 @@ public class FireIncidentSubsystem implements Runnable {
      * @param hostPort the Scheduler's port
      * @return the ACK response received from the Scheduler, or an error message if unsuccessful
      */
-    private Object rpc_send(Object request, InetAddress hostAddress, int hostPort) {
+    public Object rpc_send(Object request, InetAddress hostAddress, int hostPort) {
         // Check if the socket is closed
         if (socket == null || socket.isClosed()) {
             return "ERROR: Socket is closed";
