@@ -35,7 +35,7 @@ public class DroneStatusPanel extends JPanel {
     }
 
     public DroneStatusPanel() {
-        setPreferredSize(new Dimension(200, 400));
+        //setPreferredSize(new Dimension(200, 400));
         setBackground(panelBackground);
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createEmptyBorder(10, 10, 10, 10),
@@ -45,6 +45,16 @@ public class DroneStatusPanel extends JPanel {
         // Create timer for periodic refresh
         refreshTimer = new Timer(500, e -> repaint());
         refreshTimer.start();
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        // Header height + (approx. 90 pixels per drone entry)
+        int baseHeight = 50;
+        int droneCount = droneStatuses.size();
+        int dynamicHeight = baseHeight + (droneCount * 90);
+        // Ensure a minimum height (e.g., 400 pixels)
+        return new Dimension(200, Math.max(400, dynamicHeight));
     }
 
     public synchronized void updateDroneStatus(int droneId, int x, int y,

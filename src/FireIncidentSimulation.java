@@ -24,7 +24,12 @@ public class FireIncidentSimulation {
             JPanel rightPanel = new JPanel();
             rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
             rightPanel.setPreferredSize(new Dimension(250, 720));
-            rightPanel.add(statusPanel);
+
+            // Wrap the status panel in a scroll pane:
+            JScrollPane statusScrollPane = new JScrollPane(statusPanel);
+            statusScrollPane.setPreferredSize(new Dimension(220, 400));
+            rightPanel.add(statusScrollPane);
+
             rightPanel.add(Box.createVerticalStrut(10)); // space between
             rightPanel.add(legendPanel);
 
@@ -45,7 +50,7 @@ public class FireIncidentSimulation {
             Thread schedulerThread = new Thread(scheduler, "Scheduler");
             schedulerThread.start();
 
-            for (int i = 1; i <= 2; i++) {
+            for (int i = 1; i <= 10; i++) {
                 DroneSubsystem drone = new DroneSubsystem(scheduler, i, 0, mapUI, logger);
                 new Thread(drone, "Drone Subsystem " + i).start();
             }
