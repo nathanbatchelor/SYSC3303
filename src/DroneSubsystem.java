@@ -425,8 +425,10 @@ public class DroneSubsystem implements Runnable {
                 if ((boolean)sendRequest("STOP_?", idNum))break;
 
                 FireEvent event = (FireEvent) sendRequest("getNextFireEvent");
+                long taskStartTime = System.currentTimeMillis();
                 if(event != null) {
                     logger.recordFireDispatched(event, idNum);
+
                 }
                 busy = true;
                 if (event == null) {
@@ -490,6 +492,7 @@ public class DroneSubsystem implements Runnable {
                     if(!arrivalFault) {
                         extinguishFire(waterToDrop);
                         sendRequest("updateFireStatus", event, waterToDrop);
+                        logger.recordFireExtinguished(event, idNum);
                     }
 //                    extinguishFire(waterToDrop);
 //                    sendRequest("updateFireStatus", event, waterToDrop);
@@ -498,6 +501,8 @@ public class DroneSubsystem implements Runnable {
                     // If the drone runs out of agent, return to base.
                     if (remainingAgent <= 0) {
                         System.out.println("Drone " + idNum + " has run out of agent. Returning to base.");
+                        long taskDuration = System.currentTimeMillis() - taskStartTime;
+                        logger.logDroneTaskTime(idNum, taskDuration);
                         makeDroneIdleAndRecharge(lastEvent);
                         break; // Break out of the inner loop.
                     }
@@ -510,6 +515,8 @@ public class DroneSubsystem implements Runnable {
                     //FireEvent event2 = (FireEvent) sendRequest("getAdditionalFireEvent", batteryLife, currentX, currentY);
                     if (event2 == null) {
                         System.out.println("No additional event. Returning to base.");
+                        long taskDuration = System.currentTimeMillis() - taskStartTime;
+                        logger.logDroneTaskTime(idNum, taskDuration);
                         makeDroneIdleAndRecharge(lastEvent);
                         break; // Break out of the inner loop.
                     } else {

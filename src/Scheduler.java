@@ -440,7 +440,7 @@ public class Scheduler implements Runnable {
         System.out.println("\nScheduler: Fire at Zone: " + event.getZoneId() + " Extinguished\n");
         map.drawFireEvents(event);
         event.setCurrentState(FireEvent.FireEventState.INACTIVE);
-        logger.recordFireExtinguished(event);
+        //logger.recordFireExtinguished(event);
         if (queue.isEmpty()) {
             //System.out.println("Scheduler: All fire events have been marked as extinguished. Shutting down.");
             state = SchedulerState.SHUTTING_DOWN;
