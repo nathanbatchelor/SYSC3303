@@ -235,20 +235,6 @@ public class FireIncidentSubsystem implements Runnable {
                 return "ERROR: No ACK received";
             }
             return ackResponse;
-
-            // Wait for the actual response
-//            while (true) {
-//                byte[] responseBuffer = new byte[4096];
-//                DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
-//                socket.receive(responsePacket);  // Blocking call
-//                ObjectInputStream responseStream = new ObjectInputStream(
-//                        new ByteArrayInputStream(responsePacket.getData(), 0, responsePacket.getLength()));
-//                Object response = responseStream.readObject();
-//                // If the response does not start with "ACK:" then it's the actual response
-//                if (!(response instanceof String && ((String) response).startsWith("ACK:"))) {
-//                    return response;
-//                }
-//            }
         } catch (SocketException e) {
             System.err.println("Error in rpc_send: " + e.getMessage());
             return "ERROR: Socket is closed";
@@ -259,15 +245,10 @@ public class FireIncidentSubsystem implements Runnable {
     }
 
 
-    public void shutdown() {
-        running = false;
-        if (socket != null && !socket.isClosed()) {
-            socket.close();
-        }
-        System.out.println("FireIncidentSubsystem for Zone " + zoneId + " has shut down.");
-    }
-
-
+    /**
+     * Returns the coordinates of the zone
+     * @return a String representing the coordinates of the zone
+     */
     public String getZoneCoordinates() {
         return "(" + x1 + "," + y1 + ") to (" + x2 + "," + y2 + ")";
     }

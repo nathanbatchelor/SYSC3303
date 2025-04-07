@@ -55,9 +55,6 @@ public class DroneSubsystem implements Runnable {
      */
     public Object sendRequest(String methodName, Object... parameters) {
         try {
-//            if(!methodName.equals("STOP_?") && !methodName.equals("getNextFireEvent")) {
-//                System.out.println("Drone " + idNum + " sending request: " + methodName);
-//            }
             List<Object> requestList = new ArrayList<>();
             requestList.add(methodName);
             requestList.addAll(Arrays.asList(parameters));
@@ -239,30 +236,18 @@ public class DroneSubsystem implements Runnable {
                 currentX = startX + (int) ((destX - startX) * fraction);
                 currentY = startY + (int) ((destY - startY) * fraction);
             }
-//            currentX = startX + (int) ((destX - startX) * fraction);
-//            currentY = startY + (int) ((destY - startY) * fraction);
-            //System.out.println(idNum + "Is travelling to the zone at these coords !!!" + currentX + " " + currentY);
             map.updateDronePosition(idNum, currentX, currentY, DroneState.ON_ROUTE,remainingAgent, batteryLife);
 
             sleep(1000);  // simulate one second of travel
             batteryLife -= 1; // decrement battery by 1 second
 
-            // At each step, check if there is an on-route event.
-            // The scheduler returns an event if one is within a predefined threshold.
-
-//            FireEvent newEvent = (FireEvent) sendRequest("getNextAssignedEvent",Thread.currentThread().getName(),currentX,currentY);
-
-            // If a new event is found and it is different from the one we’re already targeting...
             if (newEvent != null && newEvent != targetEvent) {
                 System.out.println(Thread.currentThread().getName() + " found on-route event at zone " + newEvent.getZoneId() +
                         " while en route to zone " + targetEvent.getZoneId() + ". Switching assignment.");
-                // Re-add the original event back to the queue.
-                //scheduler.addFireEvent(targetEvent); //CHEATING!
                 sendRequest("ADD_FIRE_EVENT",targetEvent);
                 return newEvent;
             }
         }
-
         // Completed travel to target zone center.
         currentX = destX;
         currentY = destY;
@@ -345,14 +330,10 @@ public class DroneSubsystem implements Runnable {
                 currentX = startX + (int) ((baseX - startX) * fraction);
                 currentY = startY + (int) ((baseY - startY) * fraction);
             }
-//            currentX = startX + (int) ((baseX - startX) * fraction);
-//            currentY = startY + (int) ((baseY - startY) * fraction);
-//            System.out.println(idNum + "$$$ Is returning from the zone at these coords !!!" + currentX + " " + currentY);
             map.updateDronePosition(idNum, currentX, currentY, currentState,remainingAgent, batteryLife);
             sleep(1000);
             batteryLife -= 1;
         }
-        //sleep((long) ((distance / cruiseSpeed) * 1000));
         System.out.println();
         descend();
         currentState = DroneState.IDLE;
@@ -454,10 +435,7 @@ public class DroneSubsystem implements Runnable {
                         // Drone stays put, timer will go off
                         sleep((long) (travelTime * 0.15 * 1000));  // simulate drone doing nothing
                     }
-//                    if(currentState == DroneState.RETURNING) {
-//                        System.out.println("!!!!!Drone " + idNum + " returning to base.!!!!!");
-//                        break;
-//                    }
+
                     // HANDLE PACKET LOSS FAULT
                     if ("PACKET_LOSS".equalsIgnoreCase(event.getFault())) {
                         System.out.println("\033[1;30m \033[43m [Drone " + idNum + "] PACKET LOSS fault injected - Lost packets in communication. \033[0m");
@@ -494,8 +472,6 @@ public class DroneSubsystem implements Runnable {
                         sendRequest("updateFireStatus", event, waterToDrop);
                         logger.recordFireExtinguished(event, idNum);
                     }
-//                    extinguishFire(waterToDrop);
-//                    sendRequest("updateFireStatus", event, waterToDrop);
                     FireEvent lastEvent = event;
 
                     // If the drone runs out of agent, return to base.
@@ -522,14 +498,13 @@ public class DroneSubsystem implements Runnable {
                     } else {
                         event = event2;
                     }
-                } // end inner loop
-
+                }
                 if(hardFault) {
-                    //returnToBase(event);
+                    returnToBase(event);
                     break;
                 }
                 // After finishing an event sequence, check again for a new event.
-            } // end outer loop
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

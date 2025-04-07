@@ -412,9 +412,7 @@ public class Scheduler implements Runnable {
         int remainingLiters = event.getLitres();
         if (remainingLiters > 0 && waterDropped > 0) {
             System.out.println("Scheduler: Fire at Zone: " + event.getZoneId() + " still needs " + remainingLiters + "L.");
-            //yeahmap.drawFireEvents(event);
             queue.add(event);
-            //((LinkedList<FireEvent>) queue).addFirst(event);
             notifyAll();
         } else {
             markFireExtinguished(event);
@@ -442,7 +440,6 @@ public class Scheduler implements Runnable {
         event.setCurrentState(FireEvent.FireEventState.INACTIVE);
         //logger.recordFireExtinguished(event);
         if (queue.isEmpty()) {
-            //System.out.println("Scheduler: All fire events have been marked as extinguished. Shutting down.");
             state = SchedulerState.SHUTTING_DOWN;
             isFinished = true;
             notifyAll();
@@ -469,54 +466,7 @@ public class Scheduler implements Runnable {
         }
 
         event.remFault();
-        //FireEvent clone = new FireEvent(event); // or: new FireEvent(event, true);
         queue.add(event);
-        //((LinkedList<FireEvent>) queue).addFirst(clone);
-    }
-
-    /**
-     * Removes a specific fire event from the event queue.
-     *
-     * @param event the fire event to remove
-     */
-    public synchronized void removeFireEvent(FireEvent event) {
-        queue.remove(event);
-    }
-
-    /**
-     * Edits a fire event by reducing the required amount of firefighting agent.
-     *
-     * @param event the fire event to edit
-     * @param litres the amount of agent to remove
-     */
-    public synchronized void editFireEvent(FireEvent event, int litres) {
-        event.removeLitres(litres);
-    }
-
-    /**
-     * Signals the scheduler to finish processing events.
-     */
-    public synchronized void finish() {
-        isFinished = true;
-        notifyAll();
-    }
-
-    /**
-     * Checks if the scheduler has finished processing all fire events.
-     *
-     * @return true if finished; false otherwise
-     */
-    public synchronized boolean isFinished() {
-        return isFinished;
-    }
-
-    /**
-     * Checks if fire events have been loaded.
-     *
-     * @return true if events are loaded; false otherwise
-     */
-    public synchronized boolean isEventsLoaded() {
-        return isLoaded;
     }
 
     @Override
@@ -560,7 +510,6 @@ public class Scheduler implements Runnable {
                             }
                         }
                     } catch (Exception e) {
-                        // Timeout is expected; continue
                     }
                 }
 
@@ -580,7 +529,6 @@ public class Scheduler implements Runnable {
                             }
                         }
                     } catch (Exception e) {
-                        // Timeout is expected; continue
                     }
                 }
             } catch (Exception e) {
@@ -588,15 +536,7 @@ public class Scheduler implements Runnable {
                 throw new RuntimeException(e);
             }
 
-            // If all events are finished, immediately respond to "getAdditionalFireEvent" requests with null.
-            // (This is handled in invokeMethod; see the getAdditionalFireEvent branch.)
 
-            // Check if no message has been processed for a prolonged period.
-//            if (isFinished && System.currentTimeMillis() - lastRequestTime > GRACE_PERIOD_MS) {
-//                break;
-//            }
-
-            // Optional: Sleep a short period to avoid busy-waiting if no message was processed.
             if (!messageProcessed) {
                 try {
                     Thread.sleep(100);
@@ -605,14 +545,18 @@ public class Scheduler implements Runnable {
                 }
             }
         }
-        //System.out.println("Scheduler exited run loop");
-        // Example: In your main simulation class after all threads finish.
-//        for (FireIncidentSubsystem fis : this.getZones().values()) {
-//            fis.shutdown();
-//        }
-
     }
 
+    /**
+     * Invokes the appropriate method based on the provided method name and parameters.
+     * This method acts as a centralized RPC handler, processing various requests such as
+     * adding fire events, retrieving events, updating statuses, and handling drone faults.
+     *
+     * @param methodName the name of the method to invoke
+     * @param params a list of parameters required by the method
+     * @param from a boolean flag indicating the source of the request (true if from the Fire Incident Subsystem, false if from a drone)
+     * @return a result object from the invoked method, or a status string indicating success or failure
+     */
     private Object invokeMethod(String methodName, List<Object> params, boolean from) {
         switch (methodName) {
             case "ADD_FIRE_EVENT": {
@@ -708,6 +652,14 @@ public class Scheduler implements Runnable {
         return "???";
     }
 
+    /**
+     * Sends an RPC response to a drone with the specified ID.
+     * This method serializes the response object and transmits it via UDP
+     * to the drone listening on the designated port.
+     *
+     * @param response the object to send as the response (cannot be null)
+     * @param idnum the identifier of the target drone
+     */
     public synchronized void droneRPCSend(Object response, int idnum) {
         try {
             if (response!=null){
@@ -725,6 +677,14 @@ public class Scheduler implements Runnable {
         }
     }
 
+    /**
+     * Sends an RPC message to the Fire Incident Subsystem (FIS) for a given zone.
+     * This method serializes the provided message and sends it via UDP to the
+     * FIS listening on a port determined by the zone number.
+     *
+     * @param message the message object to be sent
+     * @param zone the zone number representing the target FIS
+     */
     public synchronized void FISRPCSend(Object message, int zone) {
         try {
             System.out.println("Sending FIS message to zone " + zone + ": " + message);
@@ -740,6 +700,11 @@ public class Scheduler implements Runnable {
         }
     }
 
+    /**
+     * Checks whether the stop flag for drones is set.
+     *
+     * @return true if the drones are signaled to stop, false otherwise
+     */
     public boolean isStopDrones() {
         return stopDrones;
     }
