@@ -4,9 +4,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import java.io.*;
 import java.net.*;
-
 import static org.junit.jupiter.api.Assertions.*;
-
 
 public class SchedulerUDPTests {
 
