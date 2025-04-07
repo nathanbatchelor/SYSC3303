@@ -1,5 +1,5 @@
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import java.net.UnknownHostException;
@@ -17,8 +17,8 @@ public class DroneFaultTest {
         MapUI mapUI = new MapUI();
         MetricsLogger logger = new MetricsLogger();
         String fireIncidentFile = "src//input//test_event_file.csv";
-        String zoneFile = "src//input//test_zone_file.csv";
-        fis = new FireIncidentSubsystem(fireIncidentFile, 1001, 0, 0, 100, 100,567);
+        String zoneFile = "src//input//test_zone_file_1.csv";
+        fis = new FireIncidentSubsystem(fireIncidentFile, 1000, 0, 0, 100, 100,567);
         scheduler = new Scheduler(zoneFile, fireIncidentFile, 2, 896, mapUI, logger);
     }
 

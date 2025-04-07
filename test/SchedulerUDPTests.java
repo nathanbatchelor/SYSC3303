@@ -1,5 +1,4 @@
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import java.io.*;
@@ -21,7 +20,7 @@ public class SchedulerUDPTests {
         MetricsLogger logger = new MetricsLogger();
         MapUI mapUI = new MapUI();
         String fireIncidentFile = "src//input//test_event_file.csv";
-        String zoneFile = "src//input//test_zone_file.csv";
+        String zoneFile = "src//input//test_zone_file_3.csv";
         scheduler = new Scheduler(zoneFile, fireIncidentFile, 2, 200, mapUI, logger);
         localhost = InetAddress.getLocalHost();
         droneSocket = new DatagramSocket(dronePort);

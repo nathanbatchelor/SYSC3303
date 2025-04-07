@@ -1,8 +1,8 @@
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
 
 import java.net.UnknownHostException;
 
@@ -16,7 +16,7 @@ public class DroneSubsystemTest {
         MetricsLogger logger = new MetricsLogger();
         MapUI mapUI = new MapUI();
         String fireIncidentFile = "src//input//test_event_file.csv";
-        String zoneFile = "src//input//test_zone_file.csv";
+        String zoneFile = "src//input//test_zone_file_2.csv";
         fis = new FireIncidentSubsystem(fireIncidentFile, 1001, 0, 0, 100, 100,123);
         scheduler = new Scheduler(zoneFile, fireIncidentFile, 2, 234, mapUI, logger);
         drone = new DroneSubsystem(scheduler, 1, 99, mapUI, logger);

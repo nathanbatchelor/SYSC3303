@@ -12,14 +12,14 @@ public class FireIncidentSubsystemTest {
 
     private static DatagramSocket socket;
     private static FireIncidentSubsystem fis;
-    private static int port = 6200;
+    private static int port = 6300;
     private static InetAddress localhost;
 
     @BeforeAll
     public static void setUpOnce() throws Exception {
         localhost = InetAddress.getLocalHost();
         socket = new DatagramSocket(port);
-        fis = new FireIncidentSubsystem("test.csv", 0, 0, 0, 10, 10, 200);
+        fis = new FireIncidentSubsystem("test.csv", 10, 0, 0, 10, 10, 200);
     }
 
     @AfterAll
@@ -56,7 +56,8 @@ public class FireIncidentSubsystemTest {
             }
         }).start();
 
-        Object response = fis.rpc_send(List.of("TEST", "fisData"), localhost, port);
+        Object response = fis.rpc_send(List.of("TEST", "fisData"), localhost, port - 10);
+        System.out.println(response);
         assertTrue(response.toString().startsWith("ACK:"), "rpc_send works as acknowledgement was recieved.");
     }
 }

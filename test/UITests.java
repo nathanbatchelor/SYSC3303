@@ -2,10 +2,6 @@
 import org.junit.jupiter.api.*;
 
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.net.*;
-import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
