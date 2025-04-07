@@ -71,11 +71,16 @@ public class MapUI extends JPanel {
         this.statusPanel = statusPanel;
     }
 
+    public Map<Integer, DroneInfo> getDrones() {
+        return this.drones;
+    }
+
+
 
     /**
      * Inner class representing information about a drone for rendering purposes.
      */
-    private static class DroneInfo {
+    protected static class DroneInfo {
         final int x, y;
         final DroneSubsystem.DroneState state;
 

@@ -24,6 +24,7 @@ public class DroneSubsystem implements Runnable {
     private boolean busy = false;
     private boolean hardFault = false;
 
+    public boolean testingReturningState = false;
     public boolean arrivalFault = false;
     public boolean nozzleFault = false;
     public boolean packetlFault = false;
@@ -54,6 +55,8 @@ public class DroneSubsystem implements Runnable {
      * @return the response received from the scheduler, or an error message if communication fails
      */
     public Object sendRequest(String methodName, Object... parameters) {
+        if (testingReturningState) return 15.0;
+
         try {
             List<Object> requestList = new ArrayList<>();
             requestList.add(methodName);
@@ -122,6 +125,10 @@ public class DroneSubsystem implements Runnable {
         map.updateDronePosition(idNum, currentX, currentY, DroneState.IDLE, remainingAgent, batteryLife);
     }
 
+    public DroneState getState() {
+        return currentState;
+    }
+
     /**
      * Displays the current state of the drone by printing a message to the console.
      */
@@ -157,8 +164,6 @@ public class DroneSubsystem implements Runnable {
         System.out.println(Thread.currentThread().getName() + " descending to base...");
         sleep((long) (5000 * takeoffSpeed));
         System.out.println(Thread.currentThread().getName() + " reached ground station.");
-        currentState = DroneState.IDLE;
-
     }
 
     private volatile FireEvent newEvent;
@@ -199,7 +204,7 @@ public class DroneSubsystem implements Runnable {
      * @return the fire event to handle (either the original or a new event detected en route)
      */
     // This is broken, need to fix
-    private synchronized FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
+    public synchronized FireEvent travelToZoneCenter(double fullTravelTime, FireEvent targetEvent) {
         // Compute the target zone center from the event.
         String[] zoneCoords = targetEvent.getZoneDetails().replaceAll("[()]", "").split(" to ");
         String[] startCoords = zoneCoords[0].split(",");
@@ -336,7 +341,6 @@ public class DroneSubsystem implements Runnable {
         }
         System.out.println();
         descend();
-        currentState = DroneState.IDLE;
         System.out.println("----------------------------------------\n");
         currentX = 0;
         currentY = 0;

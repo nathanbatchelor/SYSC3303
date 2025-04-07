@@ -1,45 +1,53 @@
-//import static org.junit.jupiter.api.Assertions.*;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.BeforeEach;
-//
-//
-//public class DroneSubsystemTest {
-//    private Scheduler scheduler;
-//    private DroneSubsystem drone;
-//    private FireIncidentSubsystem fireIncidentSubsystem;
-//    private static final String TEST_ZONE_FILE = "input/test_zone_file.csv";
-//    private static final String TEST_EVENT_FILE = "input/test_event_file.csv";
-//
-//
-//    @BeforeEach
-//    public void setUp() {
-//        scheduler = new Scheduler(TEST_ZONE_FILE, TEST_EVENT_FILE);
-//        fireIncidentSubsystem = new FireIncidentSubsystem(scheduler, TEST_EVENT_FILE, 1, 0, 0, 10, 10);
-//        drone = new DroneSubsystem(scheduler);
-//    }
-//
-//    @Test
-//    public void testInitialDroneState() {
-//        assertEquals(DroneSubsystem.DroneState.IDLE, drone.getState(),"Drone should start in IDLE state.");
-//    }
-//
-//    @Test
-//    public void testDroneOnRouteState() {
-//        FireEvent ev = new FireEvent("12:00", 1, "FIRE_DETECTED", "HIGH", fireIncidentSubsystem);
-//        //drone.travelToZoneCenter(10, ev);
-//        assertEquals(DroneSubsystem.DroneState.ON_ROUTE, drone.getState(),"Drone should start in ON_ROUTE when travelling.");
-//    }
-//
-//    @Test
-//    public void testDroppingAgentState(){
-//        drone.extinguishFire(5);
-//        assertEquals(DroneSubsystem.DroneState.DROPPING_AGENT, drone.getState(),"Drone should be DROPPING_AGENT when extinguishing fire.");
-//    }
-//
-//    @Test
-//    public void testReturningState(){
-//        FireEvent ev = new FireEvent("12:00", 1, "FIRE_DETECTED", "HIGH", fireIncidentSubsystem);
-//        drone.returnToBase(ev);
-//        assertEquals(DroneSubsystem.DroneState.RETURNING, drone.getState(), "Drone should be RETURNING when its going back to base.");
-//    }
-//}
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+
+import java.net.UnknownHostException;
+
+public class DroneSubsystemTest {
+    private static Scheduler scheduler;
+    private static DroneSubsystem drone;
+    private static FireIncidentSubsystem fis;
+
+    @BeforeAll
+    public static void setUpOnce() throws UnknownHostException {
+        MetricsLogger logger = new MetricsLogger();
+        MapUI mapUI = new MapUI();
+        String fireIncidentFile = "src//input//test_event_file.csv";
+        String zoneFile = "src//input//test_zone_file.csv";
+        fis = new FireIncidentSubsystem(fireIncidentFile, 1001, 0, 0, 100, 100,123);
+        scheduler = new Scheduler(zoneFile, fireIncidentFile, 2, 234, mapUI, logger);
+        drone = new DroneSubsystem(scheduler, 1, 99, mapUI, logger);
+    }
+
+    @Test
+    public void testIdleDroneState() {
+        MetricsLogger logger = new MetricsLogger();
+        MapUI mapUI = new MapUI();
+        DroneSubsystem idleDrone = new DroneSubsystem(scheduler, 1, 199, mapUI, logger);
+        assertEquals(DroneSubsystem.DroneState.IDLE, idleDrone.getState(),"Drone should start in IDLE state.");
+    }
+
+    @Test
+    public void testDroneOnRouteState() {
+        FireEvent event = new FireEvent("14:03:15", 1, "FIRE_DETECTED", "LOW", "ARRIVAL", fis);
+        drone.travelToZoneCenter(10, event);
+        assertEquals(DroneSubsystem.DroneState.ON_ROUTE, drone.getState(),"Drone should start in ON_ROUTE when travelling.");
+    }
+
+    @Test
+    public void testDroppingAgentState(){
+        drone.extinguishFire(4);
+        assertEquals(DroneSubsystem.DroneState.DROPPING_AGENT, drone.getState(),"Drone should be DROPPING_AGENT when extinguishing fire.");
+    }
+
+    @Test
+    public void testReturningState(){
+        FireEvent event = new FireEvent("12:00", 1, "FIRE_DETECTED", "HIGH", "NONE", null );
+        drone.testingReturningState = true;
+        drone.returnToBase(event);
+        assertEquals(DroneSubsystem.DroneState.RETURNING, drone.getState(), "Drone should be RETURNING when its going back to base.");
+    }
+}

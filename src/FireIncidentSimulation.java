@@ -4,8 +4,8 @@ import java.awt.*;
 public class FireIncidentSimulation {
 
     public static void main(String[] args) {
-        String fireIncidentFile = "input//test_event_file_with_faults.csv";
-        String zoneFile = "input//test_zone_file.csv";
+        String fireIncidentFile = "src//input//test_event_file_with_faults.csv";
+        String zoneFile = "src//input//test_zone_file.csv";
         int numDrones = 10;
 
         MetricsLogger logger = new MetricsLogger();
