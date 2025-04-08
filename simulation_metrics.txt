@@ -1,5 +1,5 @@
 === METRICS SUMMARY ===
-Simulation Duration: 339184 ms
+Simulation Duration: 340001 ms
 
 --- Zone Distances ---
 Zone 1: 980.114789195633 meters
@@ -18,13 +18,13 @@ Drone 7: 980.114789195633 meters
 Drone 8: 687.8408246098802 meters
 
 --- Drone Times ---
-Drone 1: 40145 ms
-Drone 2: 138376 ms
-Drone 3: 117348 ms
-Drone 4: 155403 ms
-Drone 6: 70167 ms
-Drone 7: 86197 ms
-Drone 8: 71158 ms
+Drone 1: 40127 ms
+Drone 2: 138347 ms
+Drone 3: 117334 ms
+Drone 4: 155357 ms
+Drone 6: 70168 ms
+Drone 7: 86207 ms
+Drone 8: 71169 ms
 
 --- Fire Event Metrics ---
 Event [13:03:15_4]
@@ -40,8 +40,8 @@ Event [13:03:15_4]
   Drone: 1
   Litres Needed: 10
   Detected: 13:03:15
-  Dispatched: +5058 ms
-  Extinguished: +40184 ms from detection
+  Dispatched: +5047 ms
+  Extinguished: +40156 ms from detection
 
 Event [12:01:15_5]
   Zone: 5
@@ -56,8 +56,8 @@ Event [12:01:15_5]
   Drone: 3
   Litres Needed: 10
   Detected: 12:01:15
-  Dispatched: +5055 ms
-  Extinguished: +63256 ms from detection
+  Dispatched: +5046 ms
+  Extinguished: +63229 ms from detection
 
 Event [17:01:15_1]
   Zone: 1
@@ -72,7 +72,7 @@ Event [17:01:15_1]
   Drone: 5
   Litres Needed: 20
   Detected: 17:01:15
-  Dispatched: +5055 ms
+  Dispatched: +5045 ms
   Extinguished: +0 ms from detection
 
 Event [17:01:15_1]
@@ -80,16 +80,16 @@ Event [17:01:15_1]
   Drone: 7
   Litres Needed: 20
   Detected: 17:01:15
-  Dispatched: +75290 ms
-  Extinguished: +161486 ms from detection
+  Dispatched: +75268 ms
+  Extinguished: +161475 ms from detection
 
 Event [17:01:15_1]
   Zone: 1
   Drone: 4
   Litres Needed: 6
   Detected: 17:01:15
-  Dispatched: +167499 ms
-  Extinguished: +249675 ms from detection
+  Dispatched: +167493 ms
+  Extinguished: +249637 ms from detection
 
 Event [14:03:15_3]
   Zone: 3
@@ -104,16 +104,16 @@ Event [14:03:15_3]
   Drone: 2
   Litres Needed: 20
   Detected: 14:03:15
-  Dispatched: +5057 ms
-  Extinguished: +69275 ms from detection
+  Dispatched: +5046 ms
+  Extinguished: +69250 ms from detection
 
 Event [14:03:15_3]
   Zone: 3
   Drone: 8
   Litres Needed: 2
   Detected: 14:03:15
-  Dispatched: +124408 ms
-  Extinguished: +187549 ms from detection
+  Dispatched: +124384 ms
+  Extinguished: +187536 ms from detection
 
 Event [18:03:15_2]
   Zone: 2
@@ -128,24 +128,24 @@ Event [18:03:15_2]
   Drone: 4
   Litres Needed: 30
   Detected: 18:03:15
-  Dispatched: +5056 ms
-  Extinguished: +70267 ms from detection
+  Dispatched: +5045 ms
+  Extinguished: +70243 ms from detection
 
 Event [18:03:15_2]
   Zone: 2
   Drone: 6
   Litres Needed: 16
   Detected: 18:03:15
-  Dispatched: +75290 ms
-  Extinguished: +145457 ms from detection
+  Dispatched: +75268 ms
+  Extinguished: +145436 ms from detection
 
 Event [18:03:15_2]
   Zone: 2
   Drone: 2
   Litres Needed: 2
   Detected: 18:03:15
-  Dispatched: +150470 ms
-  Extinguished: +216609 ms from detection
+  Dispatched: +150451 ms
+  Extinguished: +216584 ms from detection
 
 
 --- Aggregate Drone Metrics ---
@@ -155,42 +155,42 @@ Drone 0 handled 5 events
   Avg Total Time (Detection ➔ Extinguish): 0 ms
 
 Drone 1 handled 1 events
-  Avg Response Time (Detection ➔ Dispatch): 5058 ms
-  Avg Extinguish Time (Dispatch ➔ Extinguish): 35126 ms
-  Avg Total Time (Detection ➔ Extinguish): 40184 ms
+  Avg Response Time (Detection ➔ Dispatch): 5047 ms
+  Avg Extinguish Time (Dispatch ➔ Extinguish): 35109 ms
+  Avg Total Time (Detection ➔ Extinguish): 40156 ms
 
 Drone 2 handled 2 events
-  Avg Response Time (Detection ➔ Dispatch): 77763 ms
-  Avg Extinguish Time (Dispatch ➔ Extinguish): 65178 ms
-  Avg Total Time (Detection ➔ Extinguish): 142942 ms
+  Avg Response Time (Detection ➔ Dispatch): 77748 ms
+  Avg Extinguish Time (Dispatch ➔ Extinguish): 65168 ms
+  Avg Total Time (Detection ➔ Extinguish): 142917 ms
 
 Drone 3 handled 1 events
-  Avg Response Time (Detection ➔ Dispatch): 5055 ms
-  Avg Extinguish Time (Dispatch ➔ Extinguish): 58201 ms
-  Avg Total Time (Detection ➔ Extinguish): 63256 ms
+  Avg Response Time (Detection ➔ Dispatch): 5046 ms
+  Avg Extinguish Time (Dispatch ➔ Extinguish): 58183 ms
+  Avg Total Time (Detection ➔ Extinguish): 63229 ms
 
 Drone 4 handled 2 events
-  Avg Response Time (Detection ➔ Dispatch): 86277 ms
-  Avg Extinguish Time (Dispatch ➔ Extinguish): 73693 ms
-  Avg Total Time (Detection ➔ Extinguish): 159971 ms
+  Avg Response Time (Detection ➔ Dispatch): 86269 ms
+  Avg Extinguish Time (Dispatch ➔ Extinguish): 73671 ms
+  Avg Total Time (Detection ➔ Extinguish): 159940 ms
 
 Drone 5 handled 1 events
-  Avg Response Time (Detection ➔ Dispatch): 5055 ms
-  Avg Extinguish Time (Dispatch ➔ Extinguish): -5055 ms
+  Avg Response Time (Detection ➔ Dispatch): 5045 ms
+  Avg Extinguish Time (Dispatch ➔ Extinguish): -5045 ms
   Avg Total Time (Detection ➔ Extinguish): 0 ms
 
 Drone 6 handled 1 events
-  Avg Response Time (Detection ➔ Dispatch): 75290 ms
-  Avg Extinguish Time (Dispatch ➔ Extinguish): 70167 ms
-  Avg Total Time (Detection ➔ Extinguish): 145457 ms
+  Avg Response Time (Detection ➔ Dispatch): 75268 ms
+  Avg Extinguish Time (Dispatch ➔ Extinguish): 70168 ms
+  Avg Total Time (Detection ➔ Extinguish): 145436 ms
 
 Drone 7 handled 1 events
-  Avg Response Time (Detection ➔ Dispatch): 75290 ms
-  Avg Extinguish Time (Dispatch ➔ Extinguish): 86196 ms
-  Avg Total Time (Detection ➔ Extinguish): 161486 ms
+  Avg Response Time (Detection ➔ Dispatch): 75268 ms
+  Avg Extinguish Time (Dispatch ➔ Extinguish): 86207 ms
+  Avg Total Time (Detection ➔ Extinguish): 161475 ms
 
 Drone 8 handled 1 events
-  Avg Response Time (Detection ➔ Dispatch): 124408 ms
-  Avg Extinguish Time (Dispatch ➔ Extinguish): 63141 ms
-  Avg Total Time (Detection ➔ Extinguish): 187549 ms
+  Avg Response Time (Detection ➔ Dispatch): 124384 ms
+  Avg Extinguish Time (Dispatch ➔ Extinguish): 63152 ms
+  Avg Total Time (Detection ➔ Extinguish): 187536 ms
 

@@ -1,25 +1,37 @@
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
 
-public class FireIncidentSubsystemTest {
 
+/**
+ * Unit tests for the Scheduler class.
+ * Ensures proper event handling and synchronization using FireIncidentSubsystem.
+ */
+class DroneUDPTests {
     private static DatagramSocket socket;
-    private static FireIncidentSubsystem fis;
-    private static int port = 6300;
+    private static DroneSubsystem drone;
+    private static Scheduler scheduler;
     private static InetAddress localhost;
 
     @BeforeAll
     public static void setUpOnce() throws Exception {
+        MetricsLogger logger = new MetricsLogger();
+        MapUI mapUI = new MapUI();
+        String fireIncidentFile = "src//input//test_event_file.csv";
+        String zoneFile = "src//input//test_zone_file_4.csv";
+        int port = 6500;
+        int droneID = 123;
         localhost = InetAddress.getLocalHost();
-        socket = new DatagramSocket(port);
-        fis = new FireIncidentSubsystem("test.csv", 10, 0, 0, 10, 10, 200);
+        socket = new DatagramSocket(port + droneID);
+        scheduler = new Scheduler(zoneFile, fireIncidentFile, 2, 345, mapUI, logger);
+        drone = new DroneSubsystem(scheduler, droneID, 111, mapUI, logger);
     }
 
     @AfterAll
@@ -30,8 +42,8 @@ public class FireIncidentSubsystemTest {
     }
 
     @Test
-    public void testRpcSendFireIncidentSubsytem() throws Exception {
-        // Test if sending data through rpc send works
+    public void testSendRequestFromDroneToScheduler() {
+
         new Thread(() -> {
             try {
                 byte[] buffer = new byte[4096];
@@ -56,8 +68,7 @@ public class FireIncidentSubsystemTest {
             }
         }).start();
 
-        Object response = fis.rpc_send(List.of("TEST", "fisData"), localhost, port - 10);
-        System.out.println(response);
-        assertTrue(response.toString().startsWith("ACK:"), "rpc_send works as acknowledgement was recieved.");
+        Object response = drone.sendRequest("testMethod", "testParameter");
+        assertTrue(response.toString().contains("ACK:[testMethod, testParameter, 123]"), "Drone RPC works.");
     }
 }
