@@ -27,8 +27,8 @@ public class MapUI extends JPanel {
     private static final Color DRONE_RETURNING_COLOR = new Color(255, 105, 180); // Hot pink
     private static final Color DRONE_FAULT_COLOR = new Color(148, 0, 211); // Dark violet
 
-    private java.util.List<Zone> zones = new ArrayList<>();
-    private java.util.List<FireEvent> fireEvents = new ArrayList<>();
+    protected java.util.List<Zone> zones = new ArrayList<>();
+    protected java.util.List<FireEvent> fireEvents = new ArrayList<>();
     private final Map<Integer, DroneInfo> drones = new java.util.concurrent.ConcurrentHashMap<>();
 
     private final javax.swing.Timer repaintTimer;
