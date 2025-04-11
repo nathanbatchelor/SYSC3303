@@ -311,7 +311,7 @@ public class Scheduler implements Runnable {
      * @return a FireEvent within range, or null if none is found
      */
     public synchronized FireEvent getNextAssignedEvent(String droneId, int currentX, int currentY) {
-        double threshold = 50; // meters
+        double threshold = 400; // meters
         if (queue.isEmpty()) return null;
         for (FireEvent event : queue) {
             int[] center = calculateZoneCenter(event);

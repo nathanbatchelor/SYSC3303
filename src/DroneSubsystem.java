@@ -450,11 +450,9 @@ public class DroneSubsystem implements Runnable {
                     }
 
                     FireEvent oldEvent = event;
-                    System.out.println("I am here when I shouldnt be :) !!");
                     event = travelToZoneCenter(travelTime, event);
 
                     if(event != oldEvent){
-                        System.out.println("Grants Debug");
                         continue;
                     }
 
